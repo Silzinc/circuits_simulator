@@ -1,37 +1,25 @@
-use crate::dipole::Dipole;
-use num::Float;
-use std::fmt::Debug;
+/* -------------------------------------------------------------------
+
+                            Initial implementation
+                            
+    -> new_r/l/c functions
+       These functions create simple dipoles based on their main attribute
+       A capacitor also needs its starting tension as an argument to be created
+    
+    -> setup and setup_aux methods
+       setup modifies self by setting to each component its tension and current at t = 0+
+       It takes the input tension as argument and can detect short-circuits
+    
+    -> push_serie/parallel methods
+       These methods help building the circuit by updating the equivalent dipoles of each component
+
+   ------------------------------------------------------------------- */
+
+use crate::{dipole::Dipole, component::{Component, ComponentContent}};
 use Dipole::{C, F, L, R};
-
-/* ------------------------------------------------------------------------------------------------------------ */
-
-#[derive(Debug, Clone)]
-pub(crate) enum ComponentContent<T: Float + Debug> {
-    Simple(Dipole<T>),
-    Serial(Vec<Component<T>>),
-    Parallel(Vec<Component<T>>),
-}
 use ComponentContent::{Parallel, Serial, Simple};
 
-#[derive(Debug, Clone)]
-pub(crate) struct Component<T: Float + Debug> {
-    pub(crate) tension: T,
-    pub(crate) current: T,
-    equiv: Dipole<T>,
-    /*
-    Explanation : at t = 0+
-    ->  R means the component is equivalent to a resistor
-    ->  C means the tension is necessarily 0 (equivalence with a capacitor),
-        which happens if the component is a capacitor or if it is a parallel
-        component with a capacitor in its branches, or a serial component with only capacitors, etc...
-    ->  L means the current is necessarily 0 for reasons similar to the former case's
-        (equivalence with a coil)
-
-    ->  This whole is necessary to determine tension of sub-components in a serial component
-        and current of sub-components in a parallel component
-    */
-    content: ComponentContent<T>,
-}
+/* ---------------------------------------------------------------------- */
 
 duplicate::duplicate! {
     [float; [f64]; [f32]]
@@ -49,43 +37,41 @@ duplicate::duplicate! {
 
     impl Component<float> {
 
-        pub(crate) fn new_r(x: float) -> Self {
-            let zero = 0 as float;
-            if x <= zero {
+        pub(crate) fn new_r(r: float) -> Self {
+            if r <= 0 as float {
                 panic!("Tried to build a negative or zero resistance")
             } else {
                 Component {
-                    tension: zero,
-                    current: zero,
-                    equiv: R(x),
-                    content: Simple(R(x)),
+                    tension: 0 as float,
+                    current: 0 as float,
+                    equiv: R(r),
+                    content: Simple(R(r)),
                 }
             }
         }
-        pub(crate) fn new_c(x: float) -> Self {
-            let zero = 0 as float;
-            if x <= zero {
+        pub(crate) fn new_c(c: float, u: float) -> Self {
+            // u is the starting charge of the capacitor
+            if c <= 0 as float {
                 panic!("Tried to build a negative or zero capacitor")
             } else {
                 Component {
-                    tension: zero,
-                    // Here we suppose the capacitors are not initially charged
-                    current: zero,
-                    equiv: C(x),
-                    content: Simple(C(x)),
+                    tension: u,
+                    current: 0 as float,
+                    equiv: C(c),
+                    content: Simple(C(c)),
                 }
             }
         }
-        pub(crate) fn new_l(x: float) -> Self {
-            let zero = 0 as float;
-            if x <= zero {
+        pub(crate) fn new_l(l: float) -> Self {
+            if l <= 0 as float {
                 panic!("Tried to build a negative inductance")
             } else {
                 Component {
-                    tension: zero,
-                    current: zero,
-                    equiv: L(x),
-                    content: Simple(L(x)),
+                    tension: 0 as float,
+                    current: 0 as float,
+                    // We don't suppose the coil is charged initially
+                    equiv: L(l),
+                    content: Simple(L(l)),
                 }
             }
         }
@@ -186,7 +172,6 @@ duplicate::duplicate! {
         // self is modified to add other in serie to the rest of the Component
         // Currents and tensions are not updated as it will be handled by the setup
         pub(crate) fn push_serie(&mut self, other: Self) {
-            // let mut _self = std::mem::take(self);
             let new_equiv = match (&self.equiv, &other.equiv) {
                 (F,     _)      => {*self = other; return}
                 (L(l1), L(l2))  => L(l1 + l2),

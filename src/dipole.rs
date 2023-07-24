@@ -1,3 +1,13 @@
+/* -------------------------------------------------------------------
+
+                            Dipole module
+                            
+    -> Dipole declaration
+       This enum represents a simple passive dipole
+       It is either a resistor, a coil or a capacitor
+
+   ------------------------------------------------------------------- */
+
 #[derive(Debug, Clone)]
 pub(crate) enum Dipole<T: num::Float + std::fmt::Debug> {
     F,    // Poisoned state (originally intended to be a simple wire)
