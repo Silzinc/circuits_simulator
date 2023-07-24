@@ -1,7 +1,7 @@
 use crate::dipole::Dipole;
 use num::Float;
 use std::fmt::Debug;
-use Dipole::{F, R, L, C};
+use Dipole::{C, F, L, R};
 
 /* ------------------------------------------------------------------------------------------------------------ */
 
@@ -33,7 +33,7 @@ pub(crate) struct Component<T: Float + Debug> {
     content: ComponentContent<T>,
 }
 
-duplicate::duplicate!{
+duplicate::duplicate! {
     [float; [f64]; [f32]]
     impl Default for Component<float> {
         fn default() -> Self {
@@ -80,7 +80,7 @@ duplicate::duplicate!{
             let zero = 0 as float;
             if x <= zero {
                 panic!("Tried to build a negative inductance")
-            } else {  
+            } else {
                 Component {
                     tension: zero,
                     current: zero,
