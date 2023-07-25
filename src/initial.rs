@@ -1,20 +1,20 @@
-/* -------------------------------------------------------------------
-
-                            Initial implementation
-                            
-    -> new_r/l/c functions
-       These functions create simple dipoles based on their main attribute
-       A capacitor also needs its starting tension as an argument to be created
-    
-    -> setup and setup_aux methods
-       setup modifies self by setting to each component its tension and current at t = 0+
-       It takes the input tension as argument and can detect short-circuits
-    
-    -> push_serie/parallel methods
-       These methods help building the circuit by updating the equivalent dipoles of each component
-
-   ------------------------------------------------------------------- */
-
+/*-----------------------------------------------------------------------
+|
+|                           Initial implementation
+|                           
+|   -> new_r/l/c functions
+|      These functions create simple dipoles based on their main attribute
+|      A capacitor also needs its starting tension as an argument to be created
+|   
+|   -> setup and setup_aux methods
+|      setup modifies self by setting to each component its tension and current at t = 0+
+|      It takes the input tension as argument and can detect short-circuits
+|   
+|   -> push_serie/parallel methods
+|      These methods help building the circuit by updating the equivalent dipoles of each component
+|
+-----------------------------------------------------------------------*/
+#![allow(dead_code)]
 use crate::{dipole::Dipole, component::{Component, ComponentContent}};
 use Dipole::{C, F, L, R};
 use ComponentContent::{Parallel, Serial, Simple};
@@ -97,15 +97,31 @@ duplicate::duplicate! {
             // For a capacity, it is treated as a current ~ The other values can be inferred from it
             match self.equiv {
                 L(l) => {
-                    let x = input / l;
                     self.tension = input;
-                    self.current = 0 as float;
                     match self.content {
                         Serial(ref mut components) => {
+                            let mut u = input;
                             for c in components.iter_mut() {
                                 match c.equiv {
-                                    L(_l) => c.setup_aux(x * _l),
-                                    _ => c.setup_aux(0 as float),
+                                    C(_) => {
+                                        u -= c.tension;
+                                        c.setup_aux(self.current);
+                                        // In this case, the tension of c is known prior to
+                                        // the call of setup, and therefore we need to know what
+                                        // tension is "left" to the other components (the coils here)
+                                    },
+                                    R(r) => {
+                                        c.setup_aux(self.current * r);
+                                        u -= c.tension;
+                                    },
+                                    _ => (),
+                                };
+                            }
+                            // Here we are sure to find at least one L
+                            for c in components.iter_mut() {
+                                match c.equiv {
+                                    L(_l) => c.setup_aux(u * _l / l),
+                                    _ => (),
                                 };
                             }
                         },
@@ -118,32 +134,37 @@ duplicate::duplicate! {
                     }
                 },
                 R(r) => {
-                    let x = input / r;
                     self.tension = input;
-                    self.current = x;
                     match self.content {
                         Serial(ref mut components) => {
-                            for c in components.iter_mut() {
+                            let mut u = input;
+                            for c in components.iter() {
                                 // Here we are sure not to find an inductance
+                                // We first need to retrieve the tension shared between the sub resistors
+                                if matches!(c.equiv, C(_)) {
+                                    u -= c.tension;
+                                    // c.tension is already known
+                                }
+                            }
+                            self.current = u / r;
+                            for c in components.iter_mut() {
                                 match c.equiv {
-                                    L(_) => unreachable!(),
-                                    R(_r) => c.setup_aux(x * _r),
-                                    C(_) => c.setup_aux(x),
-                                    F => unreachable!(),
+                                    F | L(_) => unreachable!(),
+                                    C(_) => c.setup_aux(self.current),
+                                    R(_r) => c.setup_aux(_r * self.current),
                                 }
                             }
                         },
                         Parallel(ref mut components) => {
+                            self.current = input / r;
                             for c in components.iter_mut() {
                                 c.setup_aux(input);
                             }
                         },
-                        _ => (),
+                        _ => self.current = input / r,
                     }
                 },
                 C(c) => {
-                    let x = input / c;
-                    self.tension = 0 as float;
                     self.current = input;
                     match self.content {
                         Serial(ref mut components) => {
@@ -153,10 +174,18 @@ duplicate::duplicate! {
                             }
                         },
                         Parallel(ref mut components) => {
+                            let mut i = input;
+                            for co in components.iter_mut() {
+                                if matches!(co.equiv, R(_) | L(_)) {
+                                    co.setup_aux(self.tension);
+                                    i -= co.current;
+                                }
+                            }
+                            // Here we are sure to find at least one C
                             for co in components.iter_mut() {
                                 match co.equiv {
-                                    C(_c) => co.setup_aux(x * _c),
-                                    _ => co.setup_aux(0 as float),
+                                    C(_c) => co.setup_aux(i * _c / c),
+                                    _ => (),
                                 }
                             }
                         },

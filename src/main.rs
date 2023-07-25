@@ -1,16 +1,18 @@
-/* -------------------------------------------------------------------
-
-                            Main script
-                            
-    -> Modules declaration
-    -> Defining `type_of`, a function returning the type of its argument
-    -> Test and debug
-
-   ------------------------------------------------------------------- */
+/*-----------------------------------------------------------------------
+|
+|                           Main script
+|                           
+|   -> Modules declaration
+|   -> Defining `type_of`, a function returning the type of its argument
+|   -> Test and debug
+|
+-----------------------------------------------------------------------*/
 
 mod dipole;
 mod component;
 mod initial;
+mod circuit;
+mod update;
 
 #[allow(dead_code)]
 pub(crate) fn type_of<T>(_: &T) -> String {
@@ -19,38 +21,40 @@ pub(crate) fn type_of<T>(_: &T) -> String {
 
 /* ------------------------------------------------------------------- */
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     use component::Component as Com;
 
     let mut comp = Com::<f32>::default();
     let mut rc = Com::<f32>::default();
     let mut rlc = Com::<f32>::default();
 
-    rc.push_serie(Com::<f32>::new_r(5.));
-    rc.push_serie(Com::<f32>::new_c(72., 0.));
+    rc.push_serie(Com::<f32>::new_r(500.));
+    rc.push_serie(Com::<f32>::new_c(0.002, 0.));
 
-    rlc.push_serie(Com::<f32>::new_r(50.));
-    rlc.push_serie(Com::<f32>::new_l(40.));
-    rlc.push_serie(Com::<f32>::new_c(25., 0.)); 
+    rlc.push_serie(Com::<f32>::new_r(500.));
+    rlc.push_serie(Com::<f32>::new_l(0.001));
+    rlc.push_serie(Com::<f32>::new_c(0.002, 0.)); 
 
     comp.push_parallel(rc);
-    comp.push_parallel(rlc);    
-    comp.setup(100.);
+    // comp.push_parallel(rlc);    
+    
+    let mut circuit = circuit::Circuit {
+        dt: 0.01,
+        source: 100.,
+        charge: comp,
+    };
 
-    let mut comp2 = Com::<f64>::default();
-    let mut rc2 = Com::<f64>::default();
-    let mut rlc2 = Com::<f64>::default();
+    let mut values = Vec::<f32>::new();
+    circuit.setup();
+    
+    for _ in 0..500 {
+        values.push(match &circuit.charge.content {
+            crate::component::ComponentContent::Serial(comps) => comps[1].current,
+            _ => unreachable!(),
+        });
+        circuit.update();
+    }
 
-    rc2.push_serie(Com::<f64>::new_r(5.));
-    rc2.push_serie(Com::<f64>::new_c(72., 0.));
-
-    rlc2.push_serie(Com::<f64>::new_r(50.));
-    rlc2.push_serie(Com::<f64>::new_l(40.));
-    rlc2.push_serie(Com::<f64>::new_c(25., 0.));
-
-    comp2.push_parallel(rc2);
-    comp2.push_parallel(rlc2);  
-    comp2.setup(100.);
-
-    assert_eq!(format!("{:?}", comp), format!("{:?}", comp2));
+    println!("{:?}", values);
+    Ok(())
 }

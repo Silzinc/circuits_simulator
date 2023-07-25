@@ -1,16 +1,16 @@
-/* -------------------------------------------------------------------
-
-                            Component module
-                            
-    -> Component declaration
-       This struct represents a block structuring the circuit's charge
-       It is made of a tension, a current, an equivalent simple dipole (explained below) and its content
-
-    -> ComponentContent declaration
-       This enum allows to represent parallel and serial chains of dipoles/dipole blocks
-       It is either a simple dipole, a set of components in parallel or a set in serie
-
-   ------------------------------------------------------------------- */
+/*-----------------------------------------------------------------------
+|
+|                           Component module
+|                           
+|   -> Component declaration
+|      This struct represents a block structuring the circuit's charge
+|      It is made of a tension, a current, an equivalent simple dipole (explained below) and its content
+|
+|   -> ComponentContent declaration
+|      This enum allows to represent parallel and serial chains of dipoles/dipole blocks
+|      It is either a simple dipole, a set of components in parallel or a set in serie
+|
+-----------------------------------------------------------------------*/
 
 use crate::dipole::Dipole;
 
