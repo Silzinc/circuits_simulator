@@ -1,5 +1,3 @@
-#![allow(unused_imports, dead_code)]
-
 #[derive(Debug, Clone)]
 pub(crate) struct Circuit<T: num::Float + std::fmt::Debug> {
     pub(crate) dt: T,
