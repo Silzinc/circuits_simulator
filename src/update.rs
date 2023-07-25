@@ -1,3 +1,19 @@
+/*-----------------------------------------------------------------------
+|
+|                           Update module
+|                           
+|   In this module are declared methods used to update the state
+|   of a circuit. 
+|
+|   In particular, `update_step1` uses Euler's explicit
+|   method to compute the tension on each capacitor, the current in 
+|   each coil and the sources in each real generator.
+|
+|   The, the method `setup` infers the other variables as it did to
+|   determine the circuit's initial state.
+|
+-----------------------------------------------------------------------*/
+
 use crate::{dipole::Dipole, component::{Component, ComponentContent}, circuit::Circuit};
 use Dipole::{C, L, R};
 use ComponentContent::{Parallel, Serial};

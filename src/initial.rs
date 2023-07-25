@@ -1,17 +1,20 @@
 /*-----------------------------------------------------------------------
 |
-|                           Initial implementation
+|                           Initial module
 |                           
-|   -> new_r/l/c functions
-|      These functions create simple dipoles based on their main attribute
-|      A capacitor also needs its starting tension as an argument to be created
-|   
-|   -> setup and setup_aux methods
-|      setup modifies self by setting to each component its tension and current at t = 0+
-|      It takes the input tension as argument and can detect short-circuits
-|   
-|   -> push_serie/parallel methods
-|      These methods help building the circuit by updating the equivalent dipoles of each component
+|    -> new_r/l/c functions defined
+|       These functions create simple dipoles based on their main attribute.
+|       A capacitor also needs its starting tension as an argument to be created.
+|    
+|    -> setup and setup_aux methods defined
+|       setup modifies self by setting to each component its tension and current 
+|       at t = 0+, provided the tensions of capacitors, the sources of real g
+|       enerators and the current of coils are already known.
+|       It takes the input tension as argument and can detect short-circuits.
+|    
+|    -> push_serie/parallel methods defined
+|       These methods help building the circuit by updating the equivalent
+|       dipoles of each component
 |
 -----------------------------------------------------------------------*/
 
@@ -23,7 +26,7 @@ use ComponentContent::{Parallel, Serial};
 
 duplicate::duplicate! {
     [float; [f64]; [f32]]
-    
+
     impl Component<float> {
 
         pub(crate) fn setup(&mut self, input: float) {

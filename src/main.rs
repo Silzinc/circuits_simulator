@@ -2,9 +2,9 @@
 |
 |                           Main script
 |                           
-|   -> Modules declaration
-|   -> Defining `type_of`, a function returning the type of its argument
-|   -> Test and debug
+|    -> Modules declaration
+|    -> Defining `type_of`, a function returning the type of its argument
+|    -> Test and debug
 |
 -----------------------------------------------------------------------*/
 
