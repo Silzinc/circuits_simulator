@@ -18,6 +18,8 @@ use crate::{dipole::Dipole, component::{Component, ComponentContent}, circuit::C
 use Dipole::{C, L, R};
 use ComponentContent::{Parallel, Serial};
 
+/* ------------------------------------------------------------------- */
+
 duplicate::duplicate! {
     [float; [f64]; [f32]]
 
