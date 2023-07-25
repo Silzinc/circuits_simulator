@@ -14,77 +14,17 @@
 |      These methods help building the circuit by updating the equivalent dipoles of each component
 |
 -----------------------------------------------------------------------*/
-#![allow(dead_code)]
-use crate::{dipole::Dipole, component::{Component, ComponentContent}};
+
+use crate::{dipole::Dipole, component::{Component, ComponentContent}, generator::Generator as Gen};
 use Dipole::{C, F, L, R};
-use ComponentContent::{Parallel, Serial, Simple};
+use ComponentContent::{Parallel, Serial};
 
 /* ---------------------------------------------------------------------- */
 
 duplicate::duplicate! {
     [float; [f64]; [f32]]
-    impl Default for Component<float> {
-        fn default() -> Self {
-            let zero = 0 as float;
-            Component {
-                tension: zero,
-                current: zero,
-                equiv: F,
-                content: Simple(F),
-            }
-        }
-    }
-
+    
     impl Component<float> {
-
-        pub(crate) fn new_r(r: float) -> Self {
-            if r <= 0 as float {
-                panic!("Tried to build a negative or zero resistance")
-            } else {
-                Component {
-                    tension: 0 as float,
-                    current: 0 as float,
-                    equiv: R(r),
-                    content: Simple(R(r)),
-                }
-            }
-        }
-        pub(crate) fn new_c(c: float, u: float) -> Self {
-            // u is the starting charge of the capacitor
-            if c <= 0 as float {
-                panic!("Tried to build a negative or zero capacitor")
-            } else {
-                Component {
-                    tension: u,
-                    current: 0 as float,
-                    equiv: C(c),
-                    content: Simple(C(c)),
-                }
-            }
-        }
-        pub(crate) fn new_l(l: float) -> Self {
-            if l <= 0 as float {
-                panic!("Tried to build a negative inductance")
-            } else {
-                Component {
-                    tension: 0 as float,
-                    current: 0 as float,
-                    // We don't suppose the coil is charged initially
-                    equiv: L(l),
-                    content: Simple(L(l)),
-                }
-            }
-        }
-        /*
-        pub(crate) fn new(d: Dipole<float>) -> Self {
-            match d {
-                R(r) => Self::new_r(r),
-                C(c) => Self::new_c(c),
-                L(l) => Self::new_l(l),
-                F => Self::default(),
-            }
-        }
-        */
 
         pub(crate) fn setup(&mut self, input: float) {
             match self.equiv {
@@ -93,8 +33,9 @@ duplicate::duplicate! {
             }
         }
         fn setup_aux(&mut self, input: float) {
-            // For an inductance or a resistance, input is treated as the tension to set
+            // For a real generator or an inductance, input is treated as the tension to set
             // For a capacity, it is treated as a current ~ The other values can be inferred from it
+            // Here we suppose the tension of capacities, the current of inductances and the sources of real generators are known
             match self.equiv {
                 L(l) => {
                     self.tension = input;
@@ -110,8 +51,8 @@ duplicate::duplicate! {
                                         // the call of setup, and therefore we need to know what
                                         // tension is "left" to the other components (the coils here)
                                     },
-                                    R(r) => {
-                                        c.setup_aux(self.current * r);
+                                    R(ref g) => {
+                                        c.setup_aux(self.current * g.r + g.gen_tens());
                                         u -= c.tension;
                                     },
                                     _ => (),
@@ -126,6 +67,7 @@ duplicate::duplicate! {
                             }
                         },
                         Parallel(ref mut components) => {
+                            // There are only inductances here
                             for c in components.iter_mut() {
                                 c.setup_aux(input);
                             }
@@ -133,35 +75,27 @@ duplicate::duplicate! {
                         _ => (),
                     }
                 },
-                R(r) => {
+                R(ref g) => {
                     self.tension = input;
+                    self.current = (input - g.gen_tens()) / g.r;
                     match self.content {
                         Serial(ref mut components) => {
-                            let mut u = input;
-                            for c in components.iter() {
-                                // Here we are sure not to find an inductance
-                                // We first need to retrieve the tension shared between the sub resistors
-                                if matches!(c.equiv, C(_)) {
-                                    u -= c.tension;
-                                    // c.tension is already known
-                                }
-                            }
-                            self.current = u / r;
                             for c in components.iter_mut() {
+                                // Here we are sure not to find an inductance
                                 match c.equiv {
                                     F | L(_) => unreachable!(),
                                     C(_) => c.setup_aux(self.current),
-                                    R(_r) => c.setup_aux(_r * self.current),
+                                    R(ref _g) => c.setup_aux(_g.r * self.current + _g.gen_tens()),
                                 }
                             }
                         },
                         Parallel(ref mut components) => {
-                            self.current = input / r;
                             for c in components.iter_mut() {
+                                // Here we are sure not to find a capacity
                                 c.setup_aux(input);
                             }
                         },
-                        _ => self.current = input / r,
+                        _ => (),
                     }
                 },
                 C(c) => {
@@ -205,8 +139,24 @@ duplicate::duplicate! {
                 (F,     _)      => {*self = other; return}
                 (L(l1), L(l2))  => L(l1 + l2),
                 (_,     L(l))   => L(*l),
-                (R(r1), R(r2))  => R(r1 + r2),
-                (C(_),  R(r))   => R(*r),
+                (R(g1), R(g2))  => 
+                R(Gen {
+                    r: g1.r + g2.r,
+                    source: g1.gen_tens() + g2.gen_tens(),
+                    t_or_n: true,
+                }),
+                (C(_),  R(g))   => 
+                R(Gen {
+                    r: g.r,
+                    source: g.gen_tens() + self.tension,
+                    t_or_n: true,
+                }),
+                (R(g),  C(_))   => 
+                R(Gen {
+                    r: g.r,
+                    source: g.gen_tens() + other.tension,
+                    t_or_n: true,
+                }),
                 (C(c1), C(c2))  => C(c1 * c2 / (c1 + c2)),
                 _ => self.equiv.clone(),
             };
@@ -215,13 +165,13 @@ duplicate::duplicate! {
             match &mut self.content {
                 Serial(components) => {
                     self.equiv = new_equiv;
+                    self.tension += other.tension;
                     components.push(other)
                 }
                 _ => {
-                    let zero = 0 as float;
-                    *self = Component {
-                        tension: zero,
-                        current: zero,
+                    *self = Self {
+                        tension: self.tension + other.tension,
+                        current: self.current,
                         equiv: new_equiv,
                         content: Serial(vec![std::mem::take(self), other]),
                     }
@@ -235,8 +185,24 @@ duplicate::duplicate! {
                 (F,     _)      => {*self = other; return}
                 (C(c1), C(c2))  => C(c1 + c2),
                 (_,     C(c))   => C(*c),
-                (R(r1), R(r2))  => R(r1 * r2 / (r1 + r2)),
-                (L(_),  R(r))   => R(*r),
+                (R(g1), R(g2))  => 
+                R(Gen {
+                    r: g1.r * g2.r / (g1.r + g2.r),
+                    source: g1.gen_cur() + g2.gen_cur(),
+                    t_or_n: false,
+                }),
+                (L(_),  R(g))   => 
+                R(Gen {
+                    r: g.r,
+                    source: g.gen_cur() + self.current,
+                    t_or_n: false,
+                }),
+                (R(g),  L(_))   =>
+                R(Gen {
+                    r: g.r,
+                    source: g.gen_cur() + other.current,
+                    t_or_n: false,
+                }),
                 (L(l1), L(l2))  => L(l1 * l2 / (l1 + l2)),
                 _ => self.equiv.clone(),
             };
@@ -245,13 +211,13 @@ duplicate::duplicate! {
             match &mut self.content {
                 Parallel(components) => {
                     self.equiv = new_equiv;
+                    self.current += other.current;
                     components.push(other)
                 }
                 _ => {
-                    let zero = 0 as float;
-                    *self = Component {
-                        tension: zero,
-                        current: zero,
+                    *self = Self {
+                        tension: self.tension,
+                        current: self.current + other.current,
                         equiv: new_equiv,
                         content: Parallel(vec![std::mem::take(self), other]),
                     }
