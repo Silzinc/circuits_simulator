@@ -34,16 +34,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     cl.push_serie(Com::<f32>::new_c(1., -1.));
     cl.push_serie(Com::<f32>::new_l(1.));
 
-    // comp.push_serie(Com::<f32>::new_c(1., 0.));
-    // comp.push_serie(Com::<f32>::new_r(1.));
-    // comp.push_serie(Com::<f32>::new_l(1.));
+    comp.push_serie(Com::<f32>::new_c(1., 1.));
+    comp.push_serie(Com::<f32>::new_r(1.));
+    comp.push_serie(Com::<f32>::new_l(1.));
     comp.push_parallel(cl);
+    comp.push_serie(Com::<f32>::new_c(1., 0.));
     
     print!("Entrez la source en volts : ");
     let s: f32 = read!("{}\n");
 
     let mut circuit = circuit::Circuit {
-        dt: 0.01,
+        dt: 0.001,
         source: s,
         charge: comp,
     };
@@ -54,13 +55,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut produced_energy = vec![0f32];
     let mut currents = vec![circuit.charge.current];
     
-    for _ in 0..10000 {
+    for _ in 0..30000 {
         let old = circuit.charge.current;
         circuit.update();
         charge_energy.push(circuit.charge.energy - ini_energ);
         produced_energy.push(
             produced_energy[produced_energy.len() - 1] + 
-            circuit.source * circuit.dt * (circuit.charge.current + old) * 0.5
+            circuit.source * circuit.dt * old
         );
         currents.push(circuit.charge.current);
     }
