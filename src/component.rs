@@ -4,13 +4,15 @@
 |                           
 |    -> Component declaration
 |       This struct represents a block structuring the circuit's charge.
-|       It is made of a tension, a current, an equivalent simple dipole
-|       (explained below) and its content.
+|       It is made of a tension, a current, a value from the previous state,
+|       an equivalent simple dipole (explained below) and its content.
 | 
 |    -> ComponentContent declaration
 |       This enum allows to represent parallel and serial chains of 
 |       dipoles/dipole blocks. It is either a simple dipole,
 |       a set of components in parallel or a set in serie.
+|       The second value contained in Simple's is the previous current for 
+|       resistors and coils, and the previous tension for capacitors.
 |
 |    -> new_r/l/c functions defined
 |       These functions create simple dipoles based on their main attribute.
@@ -18,6 +20,7 @@
 |
 -----------------------------------------------------------------------*/
 
+#![allow(dead_code)]
 use crate::{dipole::Dipole, generator::Generator as Gen};
 use Dipole::{F, R, L, C};
 
@@ -25,7 +28,7 @@ use Dipole::{F, R, L, C};
 
 #[derive(Debug, Clone)]
 pub(crate) enum ComponentContent<T: num::Float + std::fmt::Debug> {
-    Simple(Dipole<T>),
+    Simple(Dipole<T>, T),
     Serial(Vec<Component<T>>),
     Parallel(Vec<Component<T>>),
 }
@@ -60,12 +63,12 @@ impl<T: num::Float + num::Zero + std::fmt::Debug> Default for Component<T> {
             current: zero,
             equiv: F,
             energy: zero,
-            content: Simple(F),
+            content: Simple(F, zero),
         }
     }
 }
 
-impl<T: num::Float + num::NumCast + std::fmt::Debug> Component<T> {
+impl<T: num::Float + num::NumCast + num::Zero + std::fmt::Debug> Component<T> {
     pub(crate) fn new_r(_r: T) -> Self {
         let zero = T::zero();
         if _r <= zero {
@@ -84,13 +87,13 @@ impl<T: num::Float + num::NumCast + std::fmt::Debug> Component<T> {
                     r: _r,
                     source: zero,
                     t_or_n: true,
-                })),
+                }), zero),
             }
         }
     }
     pub(crate) fn new_c(c: T, u: T) -> Self {
         // u is the starting charge of the capacitor
-        let zero = T::from(0.).unwrap();
+        let zero = T::zero();
         if c <= zero {
             panic!("Tried to build a negative or zero capacitor")
         } else {
@@ -99,7 +102,7 @@ impl<T: num::Float + num::NumCast + std::fmt::Debug> Component<T> {
                 current: zero,
                 equiv: C(c),
                 energy: c * u * u * T::from(0.5).unwrap(),
-                content: Simple(C(c)),
+                content: Simple(C(c), zero),
             }
         }
     }
@@ -114,7 +117,7 @@ impl<T: num::Float + num::NumCast + std::fmt::Debug> Component<T> {
                 // We don't suppose the coil is charged initially
                 equiv: L(l),
                 energy: zero,
-                content: Simple(L(l)),
+                content: Simple(L(l), zero),
             }
         }
     }
