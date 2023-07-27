@@ -4,9 +4,9 @@
 |    
 |    -> setup and setup_aux methods defined
 |       setup modifies self by setting to each component its tension and current 
-|       at t = 0+, provided the tensions of capacitors, the sources of real g
-|       enerators and the current of coils are already known.
-|       It takes the input tension as argument and can detect short-circuits.
+|       at t = 0+, provided that the tensions of capacitors, the sources of real
+|       generators and the current of coils are already known.
+|       It takes the circuit's input tension as argument and can detect short-circuits.
 |    
 |    -> push_serie/parallel methods defined
 |       These methods help building the circuit by updating the equivalent
@@ -78,16 +78,12 @@ duplicate::duplicate! {
                             }
                             self.energy = e
                         },
-                        _ => (),
+                        _ => self.energy = l * self.current * self.current * 0.5,
                     }
                 },
                 R(ref g) => {
-                    let new_current = (input - g.gen_tens()) / g.r;
-                    if matches!(self.content, Simple(_)) {
-                        self.energy += dt * g.r * (new_current * new_current + self.current * self.current) * 0.5;
-                    }
                     self.tension = input;
-                    self.current = new_current;
+                    self.current = (input - g.gen_tens()) / g.r;
                     match self.content {
                         Serial(ref mut components) => {
                             let mut e = 0 as float;
@@ -111,7 +107,7 @@ duplicate::duplicate! {
                             }
                             self.energy = e
                         },
-                        _ => (),
+                        Simple(_, previous) => self.energy += dt * g.r * (previous * previous + self.current * self.current) * 0.5,
                     }
                 },
                 C(c) => {
@@ -145,7 +141,7 @@ duplicate::duplicate! {
                             }
                             self.energy = e
                         },
-                        _ => (),
+                        _ => self.energy = c * self.tension * self.tension * 0.5,
                     }
                 },
                 F => unreachable!(),
