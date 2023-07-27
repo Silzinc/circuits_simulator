@@ -21,6 +21,7 @@ pub(crate) fn type_of<T>(_: &T) -> String {
 }
 
 use std::io::Write;
+use text_io::read;
 
 /* ------------------------------------------------------------------- */
 
@@ -28,34 +29,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     use component::Component as Com;
     
     let mut comp = Com::<f32>::default();
-    let mut rc = Com::<f32>::default();
-    let mut rlc = Com::<f32>::default();
+    let mut cl = Com::<f32>::default();
 
-    rc.push_serie(Com::<f32>::new_r(1.));
-    rc.push_serie(Com::<f32>::new_c(1., 0.));
+    cl.push_serie(Com::<f32>::new_c(1., -1.));
+    cl.push_serie(Com::<f32>::new_l(1.));
 
-    // rlc.push_serie(Com::<f32>::new_r(1.));
-    rlc.push_serie(Com::<f32>::new_l(1.));
-    rlc.push_serie(Com::<f32>::new_c(1., 0.)); 
-
-    // comp.push_parallel(rc);
-    comp.push_parallel(rlc);    
+    // comp.push_serie(Com::<f32>::new_c(1., 0.));
+    // comp.push_serie(Com::<f32>::new_r(1.));
+    // comp.push_serie(Com::<f32>::new_l(1.));
+    comp.push_parallel(cl);
     
+    print!("Entrez la source en volts : ");
+    let s: f32 = read!("{}\n");
+
     let mut circuit = circuit::Circuit {
         dt: 0.01,
-        source: 10.,
+        source: s,
         charge: comp,
     };
 
-    let mut values = Vec::<f32>::new();
     circuit.setup();
+    let ini_energ = circuit.charge.energy;
+    let mut charge_energy = vec![0f32];
+    let mut produced_energy = vec![0f32];
+    let mut currents = vec![circuit.charge.current];
     
-    for _ in 0..=10000 {
-        values.push(circuit.charge.current);
+    for _ in 0..10000 {
+        let old = circuit.charge.current;
         circuit.update();
+        charge_energy.push(circuit.charge.energy - ini_energ);
+        produced_energy.push(
+            produced_energy[produced_energy.len() - 1] + 
+            circuit.source * circuit.dt * (circuit.charge.current + old) * 0.5
+        );
+        currents.push(circuit.charge.current);
     }
 
-    let mut txt = std::fs::File::create("values.txt")?;
-    txt.write_all(format!("{:?}", values).as_bytes())?;
+    let mut charge_txt = std::fs::File::create("out/charge_energy.txt")?;
+    let mut produced_txt = std::fs::File::create("out/produced_energy.txt")?;
+    let mut currents_txt = std::fs::File::create("out/currents.txt")?;
+    
+    charge_txt.write_all(format!("{:?}", charge_energy).as_bytes())?;
+    produced_txt.write_all(format!("{:?}", produced_energy).as_bytes())?;
+    currents_txt.write_all(format!("{:?}", currents).as_bytes())?;
     Ok(())
 }

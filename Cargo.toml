@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 duplicate = "1.0.0"
 num = "0.4.1"
+text_io = "0.1.12"

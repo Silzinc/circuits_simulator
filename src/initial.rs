@@ -1,10 +1,6 @@
 /*-----------------------------------------------------------------------
 |
 |                           Initial module
-|                           
-|    -> new_r/l/c functions defined
-|       These functions create simple dipoles based on their main attribute.
-|       A capacitor also needs its starting tension as an argument to be created.
 |    
 |    -> setup and setup_aux methods defined
 |       setup modifies self by setting to each component its tension and current 
@@ -18,9 +14,10 @@
 |
 -----------------------------------------------------------------------*/
 
+#![allow(dead_code)]
 use crate::{dipole::Dipole, component::{Component, ComponentContent}, generator::Generator as Gen};
 use Dipole::{C, F, L, R};
-use ComponentContent::{Parallel, Serial};
+use ComponentContent::{Parallel, Serial, Simple};
 
 /* ---------------------------------------------------------------------- */
 
@@ -29,13 +26,13 @@ duplicate::duplicate! {
 
     impl Component<float> {
 
-        pub(crate) fn setup(&mut self, input: float) {
+        pub(crate) fn setup(&mut self, input: float, dt: float) {
             match self.equiv {
                 C(_) | F => panic!("Short-circuit observed"),
-                _ => self.setup_aux(input),
+                _ => self.setup_aux(input, dt),
             }
         }
-        fn setup_aux(&mut self, input: float) {
+        fn setup_aux(&mut self, input: float, dt: float) {
             // For a real generator or an inductance, input is treated as the tension to set
             // For a capacity, it is treated as a current ~ The other values can be inferred from it
             // Here we suppose the tension of capacities, the current of inductances and the sources of real generators are known
@@ -45,17 +42,18 @@ duplicate::duplicate! {
                     match self.content {
                         Serial(ref mut components) => {
                             let mut u = input;
+                            let mut e = 0 as float;
                             for c in components.iter_mut() {
                                 match c.equiv {
                                     C(_) => {
                                         u -= c.tension;
-                                        c.setup_aux(self.current);
+                                        c.setup_aux(self.current, dt);
                                         // In this case, the tension of c is known prior to
                                         // the call of setup, and therefore we need to know what
                                         // tension is "left" to the other components (the coils here)
                                     },
                                     R(ref g) => {
-                                        c.setup_aux(self.current * g.r + g.gen_tens());
+                                        c.setup_aux(self.current * g.r + g.gen_tens(), dt);
                                         u -= c.tension;
                                     },
                                     _ => (),
@@ -64,39 +62,54 @@ duplicate::duplicate! {
                             // Here we are sure to find at least one L
                             for c in components.iter_mut() {
                                 match c.equiv {
-                                    L(_l) => c.setup_aux(u * _l / l),
+                                    L(_l) => c.setup_aux(u * _l / l, dt),
                                     _ => (),
                                 };
+                                e += c.energy;
                             }
+                            self.energy = e
                         },
                         Parallel(ref mut components) => {
                             // There are only inductances here
+                            let mut e = 0 as float;
                             for c in components.iter_mut() {
-                                c.setup_aux(input);
+                                c.setup_aux(input, dt);
+                                e += c.energy;
                             }
+                            self.energy = e
                         },
                         _ => (),
                     }
                 },
                 R(ref g) => {
+                    let new_current = (input - g.gen_tens()) / g.r;
+                    if matches!(self.content, Simple(_)) {
+                        self.energy += dt * g.r * (new_current * new_current + self.current * self.current) * 0.5;
+                    }
                     self.tension = input;
-                    self.current = (input - g.gen_tens()) / g.r;
+                    self.current = new_current;
                     match self.content {
                         Serial(ref mut components) => {
+                            let mut e = 0 as float;
                             for c in components.iter_mut() {
                                 // Here we are sure not to find an inductance
                                 match c.equiv {
                                     F | L(_) => unreachable!(),
-                                    C(_) => c.setup_aux(self.current),
-                                    R(ref _g) => c.setup_aux(_g.r * self.current + _g.gen_tens()),
-                                }
+                                    C(_) => c.setup_aux(self.current, dt),
+                                    R(ref _g) => c.setup_aux(_g.r * self.current + _g.gen_tens(), dt),
+                                };
+                                e += c.energy;
                             }
+                            self.energy = e
                         },
                         Parallel(ref mut components) => {
+                            let mut e = 0 as float;
                             for c in components.iter_mut() {
                                 // Here we are sure not to find a capacity
-                                c.setup_aux(input);
+                                c.setup_aux(input, dt);
+                                e += c.energy;
                             }
+                            self.energy = e
                         },
                         _ => (),
                     }
@@ -105,26 +118,32 @@ duplicate::duplicate! {
                     self.current = input;
                     match self.content {
                         Serial(ref mut components) => {
+                            let mut e = 0 as float;
                             // There should only be capacities here
                             for co in components.iter_mut() {
-                                co.setup_aux(input);
+                                co.setup_aux(input, dt);
+                                e += co.energy;
                             }
+                            self.energy = e
                         },
                         Parallel(ref mut components) => {
                             let mut i = input;
+                            let mut e = 0 as float;
                             for co in components.iter_mut() {
                                 if matches!(co.equiv, R(_) | L(_)) {
-                                    co.setup_aux(self.tension);
+                                    co.setup_aux(self.tension, dt);
                                     i -= co.current;
                                 }
                             }
                             // Here we are sure to find at least one C
                             for co in components.iter_mut() {
                                 match co.equiv {
-                                    C(_c) => co.setup_aux(i * _c / c),
+                                    C(_c) => co.setup_aux(i * _c / c, dt),
                                     _ => (),
                                 }
+                                e += co.energy;
                             }
+                            self.energy = e
                         },
                         _ => (),
                     }
@@ -165,10 +184,11 @@ duplicate::duplicate! {
             };
             // Here we computed the new equivalent using domination relationships
             // between dipoles in serie when it comes to determining the flowing current
-            match &mut self.content {
-                Serial(components) => {
+            match self.content {
+                Serial(ref mut components) => {
                     self.equiv = new_equiv;
                     self.tension += other.tension;
+                    self.energy += other.energy;
                     components.push(other)
                 }
                 _ => {
@@ -176,6 +196,7 @@ duplicate::duplicate! {
                         tension: self.tension + other.tension,
                         current: self.current,
                         equiv: new_equiv,
+                        energy: self.energy + other.energy,
                         content: Serial(vec![std::mem::take(self), other]),
                     }
                 }
@@ -211,10 +232,11 @@ duplicate::duplicate! {
             };
             // Notice the relationships changed when dealing with parallel components :
             // The tension of one capacitor-like determines the tension of the whole component
-            match &mut self.content {
-                Parallel(components) => {
+            match self.content {
+                Parallel(ref mut components) => {
                     self.equiv = new_equiv;
                     self.current += other.current;
+                    self.energy += other.energy;
                     components.push(other)
                 }
                 _ => {
@@ -222,6 +244,7 @@ duplicate::duplicate! {
                         tension: self.tension,
                         current: self.current + other.current,
                         equiv: new_equiv,
+                        energy: self.energy + other.energy,
                         content: Parallel(vec![std::mem::take(self), other]),
                     }
                 }

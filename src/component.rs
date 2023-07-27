@@ -12,6 +12,10 @@
 |       dipoles/dipole blocks. It is either a simple dipole,
 |       a set of components in parallel or a set in serie.
 |
+|    -> new_r/l/c functions defined
+|       These functions create simple dipoles based on their main attribute.
+|       A capacitor also needs its starting tension as an argument to be created.
+|
 -----------------------------------------------------------------------*/
 
 use crate::{dipole::Dipole, generator::Generator as Gen};
@@ -44,6 +48,7 @@ pub(crate) struct Component<T: num::Float + std::fmt::Debug> {
     ->  This whole is necessary to determine tension of sub-components in a serial component
         and current of sub-components in a parallel component
     */
+    pub(crate) energy: T,
     pub(crate) content: ComponentContent<T>,
 }
 
@@ -54,12 +59,13 @@ impl<T: num::Float + num::Zero + std::fmt::Debug> Default for Component<T> {
             tension: zero,
             current: zero,
             equiv: F,
+            energy: zero,
             content: Simple(F),
         }
     }
 }
 
-impl<T: num::Float + num::Zero + std::fmt::Debug> Component<T> {
+impl<T: num::Float + num::NumCast + std::fmt::Debug> Component<T> {
     pub(crate) fn new_r(_r: T) -> Self {
         let zero = T::zero();
         if _r <= zero {
@@ -73,6 +79,7 @@ impl<T: num::Float + num::Zero + std::fmt::Debug> Component<T> {
                     source: zero,
                     t_or_n: true,
                 }),
+                energy: zero,
                 content: Simple(R(Gen {
                     r: _r,
                     source: zero,
@@ -83,7 +90,7 @@ impl<T: num::Float + num::Zero + std::fmt::Debug> Component<T> {
     }
     pub(crate) fn new_c(c: T, u: T) -> Self {
         // u is the starting charge of the capacitor
-        let zero = T::zero();
+        let zero = T::from(0.).unwrap();
         if c <= zero {
             panic!("Tried to build a negative or zero capacitor")
         } else {
@@ -91,6 +98,7 @@ impl<T: num::Float + num::Zero + std::fmt::Debug> Component<T> {
                 tension: u,
                 current: zero,
                 equiv: C(c),
+                energy: c * u * u * T::from(0.5).unwrap(),
                 content: Simple(C(c)),
             }
         }
@@ -105,6 +113,7 @@ impl<T: num::Float + num::Zero + std::fmt::Debug> Component<T> {
                 current: zero,
                 // We don't suppose the coil is charged initially
                 equiv: L(l),
+                energy: zero,
                 content: Simple(L(l)),
             }
         }
