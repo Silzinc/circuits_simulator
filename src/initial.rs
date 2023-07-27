@@ -14,6 +14,7 @@
 |
 -----------------------------------------------------------------------*/
 
+#![allow(dead_code)]
 use crate::{dipole::Dipole, component::{Component, ComponentContent}, generator::Generator as Gen};
 use Dipole::{C, F, L, R};
 use ComponentContent::{Parallel, Serial, Simple};
@@ -106,7 +107,7 @@ duplicate::duplicate! {
                             }
                             self.energy = e
                         },
-                        Simple(_, previous) => self.energy += dt * g.r * (previous * previous + self.current * self.current) * 0.5,
+                        Simple(_, previous) => self.energy += dt * g.r * previous * previous,
                     }
                 },
                 C(c) => {
