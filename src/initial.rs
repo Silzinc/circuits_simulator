@@ -3,8 +3,8 @@
 |                           Initial module
 |    
 |    -> setup and setup_aux methods defined
-|       setup modifies self by setting to each component its tension and current 
-|       at t = 0+, provided that the tensions of capacitors, the sources of real
+|       setup modifies self by setting to each component its energy, tension and current 
+|       at a certain time, provided that the tensions of capacitors, the sources of real
 |       generators and the current of coils are already known.
 |       It takes the circuit's input tension as argument and can detect short-circuits.
 |    
@@ -14,7 +14,6 @@
 |
 -----------------------------------------------------------------------*/
 
-#![allow(dead_code)]
 use crate::{dipole::Dipole, component::{Component, ComponentContent}, generator::Generator as Gen};
 use Dipole::{C, F, L, R};
 use ComponentContent::{Parallel, Serial, Simple};
