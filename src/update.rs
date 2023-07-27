@@ -3,11 +3,18 @@
 |                           Update module
 |                           
 |   In this module are declared methods used to update the state
-|   of a circuit. 
+|   of a circuit.
 |
-|   In particular, `update_step1` uses Euler's explicit
-|   method to compute the tension on each capacitor, the current in 
-|   each coil and the sources in each real generator.
+|   `preupdate`, when step_index is 0, updates the 
+|   tension on each capacitor, the current in each coil and the sources 
+|   in each real generator when advancing in time by dt. It does so with
+|   Euler's explicit method, which alone yields errors on long simulations.
+|
+|   `preupdate`, when step_index is 1, updates the 
+|   tension on each capacitor, the current in each coil and the sources 
+|   in each real generator when advancing in time by dt and when the currents
+|   and tensions at t + dt/2 are known, using the RK2 method (2nd order 
+|   Runge-Kutta). This reduces a lot the errors compared to explicit Euler alone.
 |
 |   The, the method `setup` infers the other variables as it did to
 |   determine the circuit's initial state.
@@ -17,7 +24,7 @@
 #![allow(dead_code)]
 use crate::{dipole::Dipole, component::{Component, ComponentContent}, circuit::Circuit};
 use Dipole::{C, L, R};
-use ComponentContent::{Parallel, Serial};
+use ComponentContent::{Parallel, Serial, Simple};
 
 /* ------------------------------------------------------------------- */
 
@@ -25,73 +32,83 @@ duplicate::duplicate! {
     [float; [f64]; [f32]]
 
     impl Component<float> {
-        fn update_step1(&mut self, dt: float) {
+        fn preupdate(&mut self, dt: float, step_index: u8) {
             match self.equiv {
                 L(l) => {
-                    match self.content {
-                        Serial(ref mut components) => {
+                    match &mut self.content {
+                        Serial(components) => {
                             let mut needs_current = true;
                             for c in components.iter_mut() {
                                 // At least one inductance here
-                                c.update_step1(dt);
+                                c.preupdate(dt, step_index);
                                 if needs_current && matches!(c.equiv, L(_)) {
                                     self.current = c.current;
                                     needs_current = false;
                                 }
                             }
                         },
-                        Parallel(ref mut components) => {
+                        Parallel(components) => {
                             let mut i = 0 as float;
                             for c in components.iter_mut() {
                                 // Only inductances here
-                                c.update_step1(dt);
+                                c.preupdate(dt, step_index);
                                 i += c.current;
                             }
                             self.current = i;
                         },
-                        _ => {
-                            self.current += dt * self.tension / l;
-                            self.energy = l * self.current * self.current * 0.5
+                        Simple(_, previous) => {
+                            if step_index == 0u8 {
+                                *previous = self.current;
+                                self.current += dt * self.tension / l;
+                            }
+                            if step_index == 1u8 {
+                                self.current = *previous + dt * self.tension / l;
+                            }
                         },
-                        // Simple(L(l))
+                        // Simple(L(l), previous)
                     }
-                    
                 },
 
                 C(c) => {
-                    match self.content {
-                        Serial(ref mut components) => {
+                    match &mut self.content {
+                        Serial(components) => {
                             let mut u = 0 as float;
                             for co in components.iter_mut() {
                                 // Only capacities here
-                                co.update_step1(dt);
+                                co.preupdate(dt, step_index);
                                 u += co.tension;
                             }
                             self.tension = u
                         },
-                        Parallel(ref mut components) => {
+                        Parallel(components) => {
                             let mut needs_tension = true;
                             for co in components.iter_mut() {
                                 // At least one capacity here
-                                co.update_step1(dt);
+                                co.preupdate(dt, step_index);
                                 if needs_tension && matches!(co.equiv, C(_)) {
                                     self.tension = co.tension;
                                     needs_tension = false;
                                 }
                             }
                         },
-                        _ => {
-                            self.tension += dt * self.current / c;
-                            self.energy = c * self.tension * self.tension * 0.5
+                        Simple(_, previous) => {
+                            if step_index == 0u8 {
+                                *previous = self.tension;
+                                self.tension += dt * self.current / c;
+                            }
+                            if step_index == 1u8 {
+                                self.tension = *previous + dt * self.current / c;
+                            }
                         }
-                        // Simple(C(c))
+                        // Simple(C(c), previous)
                     }
                 },
-                R(ref mut g) => match self.content {
-                    Serial(ref mut components) => {
+
+                R(ref mut g) => match &mut self.content {
+                    Serial(components) => {
                         let mut u = 0 as float;
                         for c in components.iter_mut() {
-                            c.update_step1(dt);
+                            c.preupdate(dt, step_index);
                             match c.equiv {
                                 C(_) => u += c.tension,
                                 R(ref _g) => u += _g.gen_tens(),
@@ -101,10 +118,10 @@ duplicate::duplicate! {
                         g.source = u;
                         g.t_or_n = true
                     },
-                    Parallel(ref mut components) => {
+                    Parallel(components) => {
                         let mut i = 0 as float;
                         for c in components.iter_mut() {
-                            c.update_step1(dt);
+                            c.preupdate(dt, step_index);
                             match c.equiv {
                                 L(_) => i += c.current,
                                 R(ref _g) => i += _g.gen_cur(),
@@ -114,9 +131,14 @@ duplicate::duplicate! {
                         g.source = i;
                         g.t_or_n = false
                     },
-                    _ => (),
+                    Simple(_, previous) => {
+                        if step_index == 0u8 {
+                            *previous = self.current;
+                        }
+                    } 
+                    // Simple(R(g), previous)
                 },
-                _ => (),
+                _ => unreachable!(),
             }
         }
     }
@@ -126,8 +148,17 @@ duplicate::duplicate! {
             self.charge.setup(self.source, self.dt)
         }
         pub(crate) fn update(&mut self) {
-            self.charge.update_step1(self.dt);
+            /*
+            // Euler's explicit method alone :
+            self.charge.preupdate(self.dt, 0u8);
             self.charge.setup(self.source, self.dt);
+            */
+
+            // RK2 method :
+            self.charge.preupdate(self.dt * 0.5, 0u8);
+            self.charge.setup(self.source, self.dt * 0.5);
+            self.charge.preupdate(self.dt, 1u8);
+            self.charge.setup(self.source, self.dt * 0.5);
         }
     }
 }
