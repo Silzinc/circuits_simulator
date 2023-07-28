@@ -1,17 +1,17 @@
 /*-----------------------------------------------------------------------
 |
 |                           Component module
-|                           
+|
 |    -> Component declaration
 |       This struct represents a block structuring the circuit's charge.
 |       It is made of a tension, a current, a value from the previous state,
 |       an equivalent simple dipole (explained below) and its content.
-| 
+|
 |    -> ComponentContent declaration
-|       This enum allows to represent parallel and serial chains of 
+|       This enum allows to represent parallel and serial chains of
 |       dipoles/dipole blocks. It is either a simple dipole,
 |       a set of components in parallel or a set in serie.
-|       The second value contained in Simple's is the previous current for 
+|       The second value contained in Simple's is the previous current for
 |       resistors and coils, and the previous tension for capacitors.
 |
 |    -> new_r/l/c functions defined
@@ -27,7 +27,7 @@
 
 #![allow(dead_code)]
 use crate::{dipole::Dipole, generator::Generator as Gen};
-use Dipole::{F, R, L, C};
+use Dipole::{C, F, L, R};
 
 /* ------------------------------------------------------------------- */
 
@@ -88,11 +88,14 @@ impl<T: num::Float + num::NumCast + num::Zero + std::fmt::Debug> Component<T> {
                     t_or_n: true,
                 }),
                 energy: zero,
-                content: Simple(R(Gen {
-                    r: _r,
-                    source: zero,
-                    t_or_n: true,
-                }), zero),
+                content: Simple(
+                    R(Gen {
+                        r: _r,
+                        source: zero,
+                        t_or_n: true,
+                    }),
+                    zero,
+                ),
             }
         }
     }
@@ -134,12 +137,16 @@ impl<T: num::Float + num::NumCast + num::Zero + std::fmt::Debug> Component<T> {
             match &self.content {
                 ComponentContent::Parallel(components) | ComponentContent::Serial(components) => {
                     if components.len() <= id[0] as usize {
-                        Err(String::from("The given id does not match with any component in the circuit"))
+                        Err(String::from(
+                            "The given id does not match with any component in the circuit",
+                        ))
                     } else {
                         components[id[0] as usize].get_by_id(&id[1..])
                     }
                 }
-                _ => Err(String::from("The given id does not match with any component in the circuit"))
+                _ => Err(String::from(
+                    "The given id does not match with any component in the circuit",
+                )),
             }
         }
     }

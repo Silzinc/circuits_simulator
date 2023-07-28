@@ -1,18 +1,18 @@
 /*-----------------------------------------------------------------------
 |
 |                           Main script
-|                           
+|
 |    -> Modules declaration
 |    -> Defining `type_of`, a function returning the type of its argument
 |    -> Test and debug
 |
 -----------------------------------------------------------------------*/
 
-mod generator;
-mod dipole;
-mod component;
-mod initial;
 mod circuit;
+mod component;
+mod dipole;
+mod generator;
+mod initial;
 mod update;
 
 #[allow(dead_code)]
@@ -27,7 +27,7 @@ use text_io::read;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     use component::Component as Com;
-    
+
     let mut comp = Com::<f32>::default();
 
     comp.push_serie(Com::<f32>::new_c(1., 0.));
@@ -56,22 +56,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut charge_energy = vec![0f32];
     let mut produced_energy = vec![0f32];
     let mut currents = vec![circuit.charge.current];
-    
+
     for _ in 0..30000 {
         let old = circuit.charge.current;
         circuit.update();
         charge_energy.push(circuit.charge.energy - ini_energ);
-        produced_energy.push(
-            produced_energy[produced_energy.len() - 1] + 
-            circuit.source * circuit.dt * old
-        );
+        produced_energy
+            .push(produced_energy[produced_energy.len() - 1] + circuit.source * circuit.dt * old);
         currents.push(circuit.charge.current);
     }
 
     let mut charge_txt = std::fs::File::create("out/charge_energy.txt")?;
     let mut produced_txt = std::fs::File::create("out/produced_energy.txt")?;
     let mut currents_txt = std::fs::File::create("out/currents.txt")?;
-    
+
     charge_txt.write_all(format!("{:?}", charge_energy).as_bytes())?;
     produced_txt.write_all(format!("{:?}", produced_energy).as_bytes())?;
     currents_txt.write_all(format!("{:?}", currents).as_bytes())?;

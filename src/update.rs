@@ -1,19 +1,19 @@
 /*-----------------------------------------------------------------------
 |
 |                           Update module
-|                           
+|
 |   In this module are declared methods used to update the state
 |   of a circuit.
 |
-|   `preupdate`, when step_index is 0, updates the 
-|   tension on each capacitor, the current in each coil and the sources 
+|   `preupdate`, when step_index is 0, updates the
+|   tension on each capacitor, the current in each coil and the sources
 |   in each real generator when advancing in time by dt. It does so with
 |   Euler's explicit method, which alone yields errors on long simulations.
 |
-|   `preupdate`, when step_index is 1, updates the 
-|   tension on each capacitor, the current in each coil and the sources 
+|   `preupdate`, when step_index is 1, updates the
+|   tension on each capacitor, the current in each coil and the sources
 |   in each real generator when advancing in time by dt and when the currents
-|   and tensions at t + dt/2 are known, using the RK2 method (2nd order 
+|   and tensions at t + dt/2 are known, using the RK2 method (2nd order
 |   Runge-Kutta). This reduces a lot the errors compared to explicit Euler alone.
 |
 |   The, the method `setup` infers the other variables as it did to
@@ -22,9 +22,13 @@
 -----------------------------------------------------------------------*/
 
 #![allow(dead_code)]
-use crate::{dipole::Dipole, component::{Component, ComponentContent}, circuit::Circuit};
-use Dipole::{C, L, R};
+use crate::{
+    circuit::Circuit,
+    component::{Component, ComponentContent},
+    dipole::Dipole,
+};
 use ComponentContent::{Parallel, Serial, Simple};
+use Dipole::{C, L, R};
 
 /* ------------------------------------------------------------------- */
 
@@ -135,7 +139,7 @@ duplicate::duplicate! {
                         if step_index == 0u8 {
                             *previous = self.current;
                         }
-                    } 
+                    }
                     // Simple(R(g), previous)
                 },
                 _ => unreachable!(),

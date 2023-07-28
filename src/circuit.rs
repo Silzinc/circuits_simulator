@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------
 |
 |                           Circuit module
-|                           
+|
 |    -> Cicruit declaration
 |       This struct represents a simulated circuit, made of a time step (dt),
 |       a tension source (source) and a charging component (charge)
