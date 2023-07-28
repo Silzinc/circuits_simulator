@@ -18,6 +18,11 @@
 |       These functions create simple dipoles based on their main attribute.
 |       A capacitor also needs its starting tension as an argument to be created.
 |
+|    -> get_by_id method defined
+|       This method returns a component of the circuit with its id as an input
+|       The id is an array of 1-byte unsigned integers that indicates the indexes
+|       to follow in the components vectors when reading the content of the circuit
+|
 -----------------------------------------------------------------------*/
 
 #![allow(dead_code)]
@@ -118,6 +123,23 @@ impl<T: num::Float + num::NumCast + num::Zero + std::fmt::Debug> Component<T> {
                 equiv: L(l),
                 energy: zero,
                 content: Simple(L(l), zero),
+            }
+        }
+    }
+
+    pub(crate) fn get_by_id(&self, id: &[u8]) -> Result<&Self, String> {
+        if id.len() == 0 {
+            Ok(self)
+        } else {
+            match &self.content {
+                ComponentContent::Parallel(components) | ComponentContent::Serial(components) => {
+                    if components.len() <= id[0] as usize {
+                        Err(String::from("The given id does not match with any component in the circuit"))
+                    } else {
+                        components[id[0] as usize].get_by_id(&id[1..])
+                    }
+                }
+                _ => Err(String::from("The given id does not match with any component in the circuit"))
             }
         }
     }
