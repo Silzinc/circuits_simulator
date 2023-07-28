@@ -31,14 +31,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut comp = Com::<f32>::default();
     let mut cl = Com::<f32>::default();
 
-    cl.push_serie(Com::<f32>::new_c(1., -1.));
+    cl.push_serie(Com::<f32>::new_c(1., 0.));
     cl.push_serie(Com::<f32>::new_l(1.));
 
-    comp.push_serie(Com::<f32>::new_c(1., 1.));
+    comp.push_serie(Com::<f32>::new_c(1., 0.));
     comp.push_serie(Com::<f32>::new_r(1.));
     comp.push_serie(Com::<f32>::new_l(1.));
     comp.push_parallel(cl);
-    comp.push_serie(Com::<f32>::new_c(1., 0.));
+    comp.push_serie(Com::<f32>::new_r(1.));
     
     print!("Entrez la source en volts : ");
     let s: f32 = read!("{}\n");

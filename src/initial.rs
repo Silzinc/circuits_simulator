@@ -1,13 +1,13 @@
 /*-----------------------------------------------------------------------
 |
 |                           Initial module
-|    
+|
 |    -> setup and setup_aux methods defined
-|       setup modifies self by setting to each component its energy, tension and current 
+|       setup modifies self by setting to each component its energy, tension and current
 |       at a certain time, provided that the tensions of capacitors, the sources of real
 |       generators and the current of coils are already known.
 |       It takes the circuit's input tension as argument and can detect short-circuits.
-|    
+|
 |    -> push_serie/parallel methods defined
 |       These methods help building the circuit by updating the equivalent
 |       dipoles of each component
@@ -15,9 +15,13 @@
 -----------------------------------------------------------------------*/
 
 #![allow(dead_code)]
-use crate::{dipole::Dipole, component::{Component, ComponentContent}, generator::Generator as Gen};
-use Dipole::{C, F, L, R};
+use crate::{
+    component::{Component, ComponentContent},
+    dipole::Dipole,
+    generator::Generator as Gen,
+};
 use ComponentContent::{Parallel, Serial, Simple};
+use Dipole::{C, F, L, R};
 
 /* ---------------------------------------------------------------------- */
 
@@ -28,7 +32,11 @@ duplicate::duplicate! {
 
         pub(crate) fn setup(&mut self, input: float, dt: float) {
             match self.equiv {
-                C(_) | F => panic!("Short-circuit observed"),
+                C(_) | F => if self.tension != input {
+                    panic!("Short-circuit observed : input tension {}V, imposed tension {}V", input, self.tension)
+                } else {
+                    self.setup_aux(0 as float, dt)
+                },
                 _ => self.setup_aux(input, dt),
             }
         }
@@ -157,19 +165,19 @@ duplicate::duplicate! {
                 (F,     _)      => {*self = other; return}
                 (L(l1), L(l2))  => L(l1 + l2),
                 (_,     L(l))   => L(*l),
-                (R(g1), R(g2))  => 
+                (R(g1), R(g2))  =>
                 R(Gen {
                     r: g1.r + g2.r,
                     source: g1.gen_tens() + g2.gen_tens(),
                     t_or_n: true,
                 }),
-                (C(_),  R(g))   => 
+                (C(_),  R(g))   =>
                 R(Gen {
                     r: g.r,
                     source: g.gen_tens() + self.tension,
                     t_or_n: true,
                 }),
-                (R(g),  C(_))   => 
+                (R(g),  C(_))   =>
                 R(Gen {
                     r: g.r,
                     source: g.gen_tens() + other.tension,
@@ -190,7 +198,8 @@ duplicate::duplicate! {
                 _ => {
                     *self = Self {
                         tension: self.tension + other.tension,
-                        current: self.current,
+                        current: 0 as float,
+                        // Note that we only allow 0 as initial current
                         equiv: new_equiv,
                         energy: self.energy + other.energy,
                         content: Serial(vec![std::mem::take(self), other]),
@@ -203,15 +212,22 @@ duplicate::duplicate! {
         pub(crate) fn push_parallel(&mut self, other: Self) {
             let new_equiv = match (&self.equiv, &other.equiv) {
                 (F,     _)      => {*self = other; return}
-                (C(c1), C(c2))  => C(c1 + c2),
-                (_,     C(c))   => C(*c),
-                (R(g1), R(g2))  => 
+                (C(c1), C(c2))  => if self.tension != other.tension {
+                    panic!("Short-circuit observed (conflicting tensions {} and {})", self.tension, other.tension)
+                } else {
+                    C(c1 + c2)
+                },
+                (_,     C(c))   =>  {
+                    self.tension = other.tension; // self's tension is indeed known now
+                    C(*c)
+                },
+                (R(g1), R(g2))  =>
                 R(Gen {
                     r: g1.r * g2.r / (g1.r + g2.r),
                     source: g1.gen_cur() + g2.gen_cur(),
                     t_or_n: false,
                 }),
-                (L(_),  R(g))   => 
+                (L(_),  R(g))   =>
                 R(Gen {
                     r: g.r,
                     source: g.gen_cur() + self.current,
@@ -238,7 +254,8 @@ duplicate::duplicate! {
                 _ => {
                     *self = Self {
                         tension: self.tension,
-                        current: self.current + other.current,
+                        current: 0 as float,
+                        // Note that we only allow 0 as initial current
                         equiv: new_equiv,
                         energy: self.energy + other.energy,
                         content: Parallel(vec![std::mem::take(self), other]),
