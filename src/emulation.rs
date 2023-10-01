@@ -12,8 +12,8 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 	// tensions of a certain node
 	pub fn emulate(&mut self, duration: T, step: T, node_id: &Id) -> Result<(Vec<T>, Vec<T>)>
 	{
-		let two = T::one() + T::one();
 		self.init()?;
+		let two = T::one() + T::one();
 
 		let node = self.nodes.get_mut(node_id).expect("Node not found :/");
 		let initial_currents = node.currents.clone();
