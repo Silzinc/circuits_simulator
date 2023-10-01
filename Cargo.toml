@@ -6,4 +6,8 @@ edition = "2021"
 [dependencies]
 duplicate = "1.0.0"
 num = "0.4.1"
+num-traits = "0.2.16"
 text_io = "0.1.12"
+fractios = {version = "0.1.0", path = "../rust-crates/fractios"}
+polyx = {version = "0.1.0", path = "../rust-crates/polyx"}
+rustfft = "6.1.0"
