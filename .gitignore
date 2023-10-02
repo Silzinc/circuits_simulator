@@ -1,5 +1,5 @@
 target
 out/*.txt
 .vscode
-fails
+deprecated
 img
