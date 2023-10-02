@@ -10,12 +10,14 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 {
 	// This function is used to emulate a circuit and returns the currents and
 	// tensions of a certain node
-	pub fn emulate(&mut self, duration: T, step: T, node_id: &Id) -> Result<(Vec<T>, Vec<T>)>
+	pub fn emulate_one(&mut self, duration: T, step: T, node_id: &Id) -> Result<(Vec<T>, Vec<T>)>
 	{
 		self.init()?;
 		let two = T::one() + T::one();
 
-		let node = self.nodes.get_mut(node_id).expect("Node not found :/");
+		let node = self.nodes
+		               .get_mut(node_id)
+		               .expect("Node of id {node_id:?} not found :/");
 		let initial_currents = node.currents.clone();
 		let initial_tensions = node.next_comp_tensions.clone();
 
@@ -47,5 +49,19 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 			elapsed += step;
 		}
 		Ok((currents, tensions))
+	}
+
+	pub fn emulate_many(&mut self,
+	                    duration: T,
+	                    step: T,
+	                    node_ids: &Vec<Id>)
+	                    -> Result<Vec<(Vec<T>, Vec<T>)>>
+	{
+		self.init()?;
+		let mut results = Vec::with_capacity(node_ids.len());
+		for node_id in node_ids {
+			results.push(self.emulate_one(duration, step, node_id)?);
+		}
+		Ok(results)
 	}
 }

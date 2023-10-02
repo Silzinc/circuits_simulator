@@ -17,7 +17,7 @@ pub(crate) fn test1() -> crate::error::Result<()>
 	// Simulate the circuit
 	let duration = 10.;
 	let step = 0.001;
-	let (currents, tensions) = c.emulate(duration, step, &vec![0u8])?;
+	let (currents, tensions) = c.emulate_one(duration, step, &vec![0u8])?;
 
 	// Save the results to a file
 	std::env::set_current_dir(std::path::Path::new("/home/jonasbloch/Projets/circuits/out"))?;
@@ -92,7 +92,7 @@ pub(crate) fn test2() -> crate::error::Result<()>
 	// Simulate the circuit
 	let duration = 1. / (2. * fundamental) * 0.99; // Gotta respect the Shannon-Nyquist criterion
 	let step = 0.02;
-	let (currents, tensions) = c.emulate(duration, step, &vec![0u8])?;
+	let (currents, tensions) = c.emulate_one(duration, step, &vec![0u8])?;
 
 	// Save the results to a file
 	std::env::set_current_dir(std::path::Path::new("/home/jonasbloch/Projets/circuits/out"))?;
