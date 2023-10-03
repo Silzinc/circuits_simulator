@@ -32,6 +32,7 @@ dependencies = [
 [[package]]
 name = "fractios"
 version = "0.1.0"
+source = "git+https://github.com/Silzinc/fractios#866bfed1c795ca8bb1c6264054f3fecd26500193"
 dependencies = [
  "duplicate",
  "num",
@@ -124,6 +125,7 @@ dependencies = [
 [[package]]
 name = "polyx"
 version = "0.1.0"
+source = "git+https://github.com/Silzinc/polyx#2dcfa1e0b3e602a36bc0b82dea5dc67ab7fd005a"
 dependencies = [
  "duplicate",
  "num",
