@@ -19,19 +19,18 @@ pub(crate) fn test1() -> crate::error::Result<()>
 	let step = 0.001;
 	let (currents, tensions) = c.emulate_one(duration, step, &vec![0u8])?;
 
-	// Save the results to a file
-	std::env::set_current_dir(std::path::Path::new("/home/jonasbloch/Projets/circuits/out"))?;
+	let out_dir = std::path::Path::new(r"/home/jonasbloch/Projets/circuits_rust/out");
 	let mut currents_file =
-		File::create("currents.txt").expect("Failed to create currents text file");
+		File::create(out_dir.join("currents.txt")).expect("Failed to create currents text file");
 	let mut tensions_file =
-		File::create("tensions.txt").expect("Failed to create tensions text file");
+		File::create(out_dir.join("tensions.txt")).expect("Failed to create tensions text file");
 	currents_file.write_all(format!("{:?}", currents).as_bytes())
 	             .expect("Failed to write currents");
 	tensions_file.write_all(format!("{:?}", tensions).as_bytes())
 	             .expect("Failed to write tensions");
 
 	// Plot the results using Python
-	std::process::Command::new("python3").arg(r"/home/jonasbloch/Projets/circuits/out/plot.py")
+	std::process::Command::new("python3").arg(r"/home/jonasbloch/Projets/circuits_rust/out/plot.py")
 	                                     .arg(format!("{duration}"))
 	                                     .spawn()
 	                                     .expect("Failed to plot the results");
@@ -67,7 +66,7 @@ pub(crate) fn test2() -> crate::error::Result<()>
 
 	let fundamental = 0.04;
 	let n_freqs = 5000;
-	let fourier_coefs = crate::fourier::fouriers(weird, fundamental, n_freqs - 1);
+	let fourier_coefs = crate::fourier::fouriers(door, fundamental, n_freqs - 1);
 
 	// Create the circuit
 	let mut c = Circuit::new();
@@ -95,18 +94,18 @@ pub(crate) fn test2() -> crate::error::Result<()>
 	let (currents, tensions) = c.emulate_one(duration, step, &vec![0u8])?;
 
 	// Save the results to a file
-	std::env::set_current_dir(std::path::Path::new("/home/jonasbloch/Projets/circuits/out"))?;
+	let out_dir = std::path::Path::new(r"/home/jonasbloch/Projets/circuits_rust/out");
 	let mut currents_file =
-		File::create("currents.txt").expect("Failed to create currents text file");
+		File::create(out_dir.join("currents.txt")).expect("Failed to create currents text file");
 	let mut tensions_file =
-		File::create("tensions.txt").expect("Failed to create tensions text file");
+		File::create(out_dir.join("tensions.txt")).expect("Failed to create tensions text file");
 	currents_file.write_all(format!("{:?}", currents).as_bytes())
 	             .expect("Failed to write currents");
 	tensions_file.write_all(format!("{:?}", tensions).as_bytes())
 	             .expect("Failed to write tensions");
 
 	// Plot the results using Python
-	std::process::Command::new("python3").arg(r"/home/jonasbloch/Projets/circuits/out/plot.py")
+	std::process::Command::new("python3").arg(r"/home/jonasbloch/Projets/circuits_rust/out/plot.py")
 	                                     .arg(format!("{duration}"))
 	                                     .spawn()
 	                                     .expect("Failed to plot the results");
