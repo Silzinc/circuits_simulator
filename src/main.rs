@@ -7,7 +7,7 @@ mod util;
 
 fn main()
 {
-	if let Err(e) = test::test1() {
+	if let Err(e) = test::test() {
 		eprintln!("{}", e);
 	}
 }
