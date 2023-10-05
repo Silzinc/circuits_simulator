@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
 	error::{short_circuit_current, Result},
-	util::{is_multiple_of_x, strong_link, StrongLink},
+	util::is_multiple_of_x,
 };
 use fractios::traits::{RatioFracComplexFloat, RatioFracFloat};
 use num::complex::Complex;
@@ -18,7 +18,7 @@ pub struct Circuit<T: RatioFracFloat>
 {
 	pub is_init: bool,
 	pub source:  Source<T>,
-	pub content: StrongLink<Component<T>>,
+	pub content: Component<T>,
 	// This HashMap is only used to access a Node's voltage and current once the simulation has
 	// started This won't be used at all during the setup and shall be initialized when the
 	// simulation starts
@@ -31,7 +31,7 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 	{
 		Self { is_init: false,
 		       source:  Source::new(),
-		       content: strong_link(Component::default()),
+		       content: Component::default(),
 		       nodes:   HashMap::new(), }
 	}
 }
@@ -45,20 +45,25 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 			return Ok(());
 		}
 		self.setup_nodes();
-		let mut content = self.content.borrow_mut();
 		for (pulse, voltage) in self.source.voltages.iter() {
 			if voltage.is_zero() {
 				continue;
 			}
-			if pulse.is_zero() && is_multiple_of_x(&content.impedance) {
-				return short_circuit_current(&vec![0u8], voltage, &content.impedance);
+			if pulse.is_zero() && is_multiple_of_x(&self.content.impedance) {
+				return short_circuit_current(&vec![0u8], voltage, &self.content.impedance);
 			}
 			let initial_tension = Complex::from(*voltage);
-			content.impedance.inv_inplace();
-			let initial_current = initial_tension * content.impedance.eval(Complex::from(*pulse));
-			content.impedance.inv_inplace();
-			content.init_current_tension(initial_current, initial_tension, *pulse, &mut self.nodes)?;
-			content.init_potentials(initial_tension, &mut self.nodes);
+			self.content.impedance.inv_inplace();
+			let initial_current = initial_tension * self.content.impedance.eval(Complex::from(*pulse));
+			self.content.impedance.inv_inplace();
+			self.content.init_current_tension(
+			                                   initial_current,
+			                                   initial_tension,
+			                                   *pulse,
+			                                   &mut self.nodes,
+			)?;
+			self.content
+			    .init_potentials(initial_tension, &mut self.nodes);
 		}
 		self.is_init = true;
 		Ok(())

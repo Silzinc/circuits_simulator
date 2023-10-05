@@ -10,7 +10,6 @@ use crate::{
 	},
 	util::{
 		evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x,
-		strong_link, weak_link, StrongLink, WeakLink,
 	},
 };
 use fractios::{
@@ -24,8 +23,8 @@ use std::collections::HashMap;
 #[derive(Clone, Debug)]
 pub enum ComponentContent<T>
 {
-	Parallel(Vec<StrongLink<Component<T>>>),
-	Series(Vec<StrongLink<Component<T>>>),
+	Parallel(Vec<Component<T>>),
+	Series(Vec<Component<T>>),
 	Simple(Dipole<T>),
 	Poisoned, // Used as a default state
 }
@@ -35,7 +34,6 @@ pub struct Component<T>
 {
 	pub content:   ComponentContent<T>,
 	pub impedance: RatioFrac<Complex<T>>,
-	pub parent:    WeakLink<Component<T>>,
 	pub fore_node: Id,
 }
 
@@ -54,25 +52,25 @@ impl<T: RatioFracFloat> TryFrom<ComponentContent<T>> for Component<T>
 {
 	type Error = Error;
 
-	fn try_from(content: ComponentContent<T>) -> Result<Self>
+	fn try_from(mut content: ComponentContent<T>) -> Result<Self>
 	{
 		use ComponentContent::*;
 		let impedance: RatioFrac<Complex<T>> =
-			match &content {
+			match &mut content {
 				Series(components) => {
 					let mut impedance = RatioFrac::default();
 					for component in components.iter() {
-						impedance += &component.borrow().impedance;
+						impedance += &component.impedance;
 					}
 					impedance.reduce();
 					impedance
 				},
 				Parallel(components) => {
 					let mut impedance = RatioFrac::default();
-					for component in components.iter() {
-						component.borrow_mut().impedance.inv_inplace();
-						impedance += &component.borrow().impedance;
-						component.borrow_mut().impedance.inv_inplace();
+					for component in components.iter_mut() {
+						component.impedance.inv_inplace();
+						impedance += &component.impedance;
+						component.impedance.inv_inplace();
 					}
 					impedance.inv_inplace();
 					impedance.reduce();
@@ -85,7 +83,6 @@ impl<T: RatioFracFloat> TryFrom<ComponentContent<T>> for Component<T>
 			};
 		Ok(Component { content,
 		               impedance,
-		               parent: std::rc::Weak::default(),
 		               fore_node: Id::default() })
 	}
 }
@@ -107,84 +104,64 @@ impl<T: RatioFracFloat> Component<T>
 {
 	// This does not care about Ids
 	// Pushes a component onto self in serie and updates impedance
-	pub fn push_serie(self_: &StrongLink<Self>, mut component: Component<T>)
+	pub fn push_serie(&mut self, component: Component<T>)
 	{
 		use ComponentContent::*;
-		let true_self = &mut *self_.borrow_mut();
-		match true_self.content {
+		match self.content {
 			Poisoned => {
-				true_self.content = component.content;
-				true_self.impedance = component.impedance;
+				self.content = component.content;
+				self.impedance = component.impedance;
 			},
 			Series(ref mut components) => {
-				true_self.impedance += &component.impedance;
-				true_self.impedance.reduce();
-				component.parent = weak_link(&self_);
-				components.push(strong_link(component));
+				self.impedance += &component.impedance;
+				self.impedance.reduce();
+				components.push(component);
 			},
 			_ => {
-				let old_parent = std::mem::take(&mut true_self.parent);
-				let mut new_impedance = &true_self.impedance + &component.impedance;
+				let mut new_impedance = &self.impedance + &component.impedance;
 				new_impedance.reduce();
 
-				true_self.parent = weak_link(&self_); // this true_self will be taken one level deeper and its parent points to self_
-				component.parent = weak_link(&self_);
+				self.content = Series(vec![std::mem::take(self), component]);
 
-				true_self.content = Series(vec![
-					strong_link(std::mem::take(true_self)),
-					strong_link(component),
-				]);
-
-				true_self.impedance = new_impedance;
-				true_self.parent = old_parent;
+				self.impedance = new_impedance;
 			},
 		};
 	}
 
 	// Pushes a component onto self in parallel and updates impedance
-	pub fn push_parallel(self_: &StrongLink<Self>, mut component: Component<T>)
+	pub fn push_parallel(&mut self, mut component: Component<T>)
 	{
 		use ComponentContent::*;
-		let true_self = &mut *self_.borrow_mut();
-		match true_self.content {
+		match self.content {
 			Poisoned => {
-				true_self.content = component.content;
-				true_self.impedance = component.impedance;
+				self.content = component.content;
+				self.impedance = component.impedance;
 			},
 			Parallel(ref mut components) => {
 				// This is a bit tricky, but it should make the computation faster because only
 				// 1 ratiofrac is created instead of 2
-				true_self.impedance.inv_inplace();
+				self.impedance.inv_inplace();
 				component.impedance.inv_inplace();
-				true_self.impedance += &component.impedance;
+				self.impedance += &component.impedance;
 				component.impedance.inv_inplace();
-				true_self.impedance.inv_inplace();
-				true_self.impedance.reduce();
+				self.impedance.inv_inplace();
+				self.impedance.reduce();
 
-				component.parent = weak_link(&self_);
-				components.push(strong_link(component));
+				components.push(component);
 			},
 			_ => {
-				let old_parent = std::mem::take(&mut true_self.parent);
 				// Same as above. Only 1 ratiofrac is created
-				true_self.impedance.inv_inplace();
+				self.impedance.inv_inplace();
 				component.impedance.inv_inplace();
-				let mut new_impedance = &true_self.impedance + &component.impedance;
+				let mut new_impedance = &self.impedance + &component.impedance;
 				component.impedance.inv_inplace();
-				true_self.impedance.inv_inplace();
+				self.impedance.inv_inplace();
 				new_impedance.inv_inplace();
 				new_impedance.reduce();
 
-				true_self.parent = weak_link(&self_); // this true_self will be taken one level deeper and its parent points to self_
-				component.parent = weak_link(&self_);
+				self.content = Parallel(vec![std::mem::take(self), component]);
 
-				true_self.content = Parallel(vec![
-					strong_link(std::mem::take(true_self)),
-					strong_link(component),
-				]);
-
-				true_self.impedance = new_impedance;
-				true_self.parent = old_parent;
+				self.impedance = new_impedance;
 			},
 		};
 	}
@@ -224,7 +201,6 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 		match &mut self.content {
 			Series(components) =>
 				for component in components.iter_mut() {
-					let mut component = component.borrow_mut();
 					if !pulse.is_zero() || !is_multiple_of_invx(&component.impedance) {
 						let next_actual_impedance = component.impedance.eval(Complex::from(pulse));
 						component.init_current_tension(current, current * next_actual_impedance, pulse, nodes)?;
@@ -243,7 +219,6 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 				},
 			Parallel(components) =>
 				for component in components.iter_mut() {
-					let mut component = component.borrow_mut();
 					if !pulse.is_zero() || !is_multiple_of_x(&component.impedance) {
 						// Better to do inv_inplace instead of calling .inv() on the impendance because
 						// NaN.inv() = NaN and not 0, which can lead to false short-circuit detection
@@ -291,13 +266,11 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 		match &mut self.content {
 			Parallel(components) =>
 				for component in components {
-					component.borrow_mut()
-					         .init_potentials(fore_potential, nodes);
+					component.init_potentials(fore_potential, nodes);
 				},
 			Series(components) => {
 				let mut remaining = fore_potential;
 				for component in components {
-					let mut component = component.borrow_mut();
 					component.init_potentials(remaining, nodes);
 
 					remaining -= *nodes.get(&component.fore_node)

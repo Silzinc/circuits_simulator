@@ -36,7 +36,7 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 					continue;
 				}
 				if pulse.is_zero() {
-					return short_circuit_current(&vec![0u8], voltage, &self.content.borrow().impedance);
+					return short_circuit_current(&vec![0u8], voltage, &self.content.impedance);
 				}
 				let factor = Complex::new(T::zero(), elapsed * *pulse).exp();
 				// This way we know we can approximate a real function such as current or

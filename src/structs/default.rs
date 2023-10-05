@@ -7,7 +7,6 @@ use fractios::{
 };
 use num::Complex;
 use std::default::Default;
-use std::rc::Weak;
 
 impl<T> Default for Dipole<T>
 {
@@ -25,7 +24,6 @@ impl<T: RatioFracFloat> Default for Component<T> where Complex<T>: RatioFracComp
 	{
 		Component { content:   ComponentContent::default(),
 		            impedance: RatioFrac::default(),
-		            parent:    Weak::default(),
 		            fore_node: Id::default(), }
 	}
 }

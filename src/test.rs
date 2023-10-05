@@ -12,7 +12,7 @@ pub(crate) fn test1() -> crate::error::Result<()>
 	c.source.add_pulse(8., Complex::from(1.));
 	c.source.add_pulse(2., Complex::from(3.5));
 
-	Component::push_serie(&c.content, Component::try_from(Capacitor(4.))?);
+	c.content.push_serie(Component::try_from(Capacitor(4.))?);
 
 	// Simulate the circuit
 	let duration = 10.;
@@ -40,13 +40,10 @@ pub(crate) fn test1() -> crate::error::Result<()>
 #[allow(dead_code)]
 pub(crate) fn test2() -> crate::error::Result<()>
 {
-	use crate::{
-		structs::{
-			circuit::Circuit,
-			component::{Component, ComponentContent},
-			dipole::Dipole::{Capacitor, Resistor},
-		},
-		util::strong_link,
+	use crate::structs::{
+		circuit::Circuit,
+		component::{Component, ComponentContent},
+		dipole::Dipole::{Capacitor, Resistor},
 	};
 	use std::{fs::File, io::prelude::*};
 	use ComponentContent::Series;
@@ -78,15 +75,11 @@ pub(crate) fn test2() -> crate::error::Result<()>
 		// c.source.add_pulse(-twopi * i as f64 * fundamental, coef.conj());
 	}
 
-	Component::push_serie(&c.content, Component::try_from(Resistor(1.))?);
-	Component::push_serie(&c.content, Component::try_from(Capacitor(4.))?);
-	Component::push_parallel(
-	                         &c.content,
-	                         Component::try_from(Series(vec![
-		strong_link(Component::try_from(Resistor(0.2))?),
-		strong_link(Component::try_from(Capacitor(8.))?),
-	]))?,
-	);
+	c.content.push_serie(Component::try_from(Resistor(1.))?);
+	c.content.push_serie(Component::try_from(Capacitor(4.))?);
+	c.content
+	 .push_parallel(Component::try_from(Series(vec![Component::try_from(Resistor(0.2))?,
+	                                                Component::try_from(Capacitor(8.))?,]))?);
 
 	// Simulate the circuit
 	let duration = 1. / (2. * fundamental) * 0.99; // Gotta respect the Shannon-Nyquist criterion

@@ -2,10 +2,9 @@ use super::{
 	circuit::Circuit,
 	component::{Component, ComponentContent},
 };
-use crate::util::WeakLink;
 use fractios::traits::{RatioFracComplexFloat, RatioFracFloat};
 use num::complex::Complex;
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 // A linked list would be a better fit
 pub(crate) type Id = Vec<u8>;
@@ -32,7 +31,7 @@ impl<T: RatioFracFloat> Node<T>
 
 impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 {
-	fn get_comp_by_slice(&self, id: &[u8]) -> Option<WeakLink<Component<T>>>
+	fn get_comp_by_slice(&self, id: &[u8]) -> Option<&Component<T>>
 	{
 		if id.len() == 0 {
 			panic!("The id is empty")
@@ -42,9 +41,9 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 					let index = id[0] as usize;
 					if index < components.len() {
 						if id.len() == 1 {
-							Some(Rc::downgrade(&components[index]))
+							Some(&components[index])
 						} else {
-							(*components[index].borrow_mut()).get_comp_by_slice(&id[1..])
+							components[index].get_comp_by_slice(&id[1..])
 						}
 					} else {
 						None
@@ -55,7 +54,7 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 		}
 	}
 
-	pub fn get_comp_by_id(&mut self, id: Id) -> Option<WeakLink<Component<T>>>
+	pub fn get_comp_by_id(&mut self, id: Id) -> Option<&Component<T>>
 	{
 		self.get_comp_by_slice(id.as_slice())
 	}
@@ -70,7 +69,6 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 				next_id.extend_from_slice(&self.fore_node);
 				next_id.push(0u8);
 				for component in components.iter_mut() {
-					let mut component = component.borrow_mut();
 					component.set_ids(&next_id);
 					next_id[self.fore_node.len()] += 1u8;
 				}
@@ -91,7 +89,6 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 				next_id.extend_from_slice(id);
 				next_id.push(0u8);
 				for component in components.iter() {
-					let component = component.borrow();
 					component.setup_nodes(nodes);
 					next_id[id.len()] += 1u8;
 				}
@@ -103,11 +100,11 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 
 impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 {
-	pub fn setup_ids(&mut self) { self.content.borrow_mut().set_ids(&vec![0u8]); }
+	pub fn setup_ids(&mut self) { self.content.set_ids(&vec![0u8]); }
 
 	pub fn setup_nodes(&mut self)
 	{
 		self.setup_ids();
-		self.content.borrow().setup_nodes(&mut self.nodes);
+		self.content.setup_nodes(&mut self.nodes);
 	}
 }

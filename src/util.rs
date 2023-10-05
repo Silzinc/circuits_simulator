@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use fractios::RatioFrac;
 use num_traits::Zero;
 use std::{
