@@ -7,25 +7,23 @@ use crate::{
 	error::{short_circuit_current, Result},
 	util::is_multiple_of_x,
 };
-use fractios::traits::{RatioFracComplexFloat, RatioFracFloat};
 use num::complex::Complex;
 use num_traits::Zero;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
-pub struct Circuit<T: RatioFracFloat>
-	where Complex<T>: RatioFracComplexFloat
+pub struct Circuit
 {
 	pub is_init: bool,
-	pub source:  Source<T>,
-	pub content: Component<T>,
+	pub source:  Source,
+	pub content: Component,
 	// This HashMap is only used to access a Node's voltage and current once the simulation has
 	// started This won't be used at all during the setup and shall be initialized when the
 	// simulation starts
-	pub nodes:   HashMap<Id, Node<T>>,
+	pub nodes:   HashMap<Id, Node>,
 }
 
-impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
+impl Circuit
 {
 	pub fn new() -> Self
 	{
@@ -36,7 +34,7 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 	}
 }
 
-impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
+impl Circuit
 {
 	// The following function only assumes the circuit tree is constructed
 	pub fn init(&mut self) -> Result<()>

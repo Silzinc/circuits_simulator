@@ -1,24 +1,20 @@
 use super::component::*;
 use super::dipole::Dipole;
 use super::node::*;
-use fractios::{
-	traits::{RatioFracComplexFloat, RatioFracFloat},
-	RatioFrac,
-};
-use num::Complex;
+use fractios::RatioFrac;
 use std::default::Default;
 
-impl<T> Default for Dipole<T>
+impl Default for Dipole
 {
 	fn default() -> Self { Dipole::Poisoned }
 }
 
-impl<T> Default for ComponentContent<T>
+impl Default for ComponentContent
 {
 	fn default() -> Self { ComponentContent::Poisoned }
 }
 
-impl<T: RatioFracFloat> Default for Component<T> where Complex<T>: RatioFracComplexFloat
+impl Default for Component
 {
 	fn default() -> Self
 	{
@@ -28,7 +24,7 @@ impl<T: RatioFracFloat> Default for Component<T> where Complex<T>: RatioFracComp
 	}
 }
 
-impl<T: RatioFracFloat + Default> Default for Node<T>
+impl Default for Node
 {
 	fn default() -> Self
 	{

@@ -2,23 +2,22 @@ use super::{
 	circuit::Circuit,
 	component::{Component, ComponentContent},
 };
-use fractios::traits::{RatioFracComplexFloat, RatioFracFloat};
-use num::complex::Complex;
+use num::Complex;
 use std::collections::HashMap;
 
 // A linked list would be a better fit
 pub(crate) type Id = Vec<u8>;
 
 #[derive(Clone, Debug)]
-pub struct Node<T>
+pub struct Node
 {
 	pub id:                 Id,
-	pub next_comp_tensions: Vec<Complex<T>>,
-	pub potentials:         Vec<Complex<T>>,
-	pub currents:           Vec<Complex<T>>,
+	pub next_comp_tensions: Vec<Complex<f64>>,
+	pub potentials:         Vec<Complex<f64>>,
+	pub currents:           Vec<Complex<f64>>,
 }
 
-impl<T: RatioFracFloat> Node<T>
+impl Node
 {
 	pub fn new() -> Self
 	{
@@ -29,9 +28,9 @@ impl<T: RatioFracFloat> Node<T>
 	}
 }
 
-impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
+impl Component
 {
-	fn get_comp_by_slice(&self, id: &[u8]) -> Option<&Component<T>>
+	fn get_comp_by_slice(&self, id: &[u8]) -> Option<&Component>
 	{
 		if id.len() == 0 {
 			panic!("The id is empty")
@@ -54,7 +53,7 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 		}
 	}
 
-	pub fn get_comp_by_id(&mut self, id: Id) -> Option<&Component<T>>
+	pub fn get_comp_by_id(&mut self, id: Id) -> Option<&Component>
 	{
 		self.get_comp_by_slice(id.as_slice())
 	}
@@ -77,7 +76,7 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 		}
 	}
 
-	pub fn setup_nodes(&self, nodes: &mut HashMap<Id, Node<T>>)
+	pub fn setup_nodes(&self, nodes: &mut HashMap<Id, Node>)
 	{
 		let id = &self.fore_node;
 		let mut node = Node::new();
@@ -98,7 +97,7 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 	}
 }
 
-impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
+impl Circuit
 {
 	pub fn setup_ids(&mut self) { self.content.set_ids(&vec![0u8]); }
 

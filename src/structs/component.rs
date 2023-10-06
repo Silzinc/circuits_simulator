@@ -12,50 +12,43 @@ use crate::{
 		evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x,
 	},
 };
-use fractios::{
-	traits::{RatioFracComplexFloat, RatioFracFloat},
-	RatioFrac,
-};
+use fractios::RatioFrac;
 use num::complex::Complex;
 use num_traits::Zero;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
-pub enum ComponentContent<T>
+pub enum ComponentContent
 {
-	Parallel(Vec<Component<T>>),
-	Series(Vec<Component<T>>),
-	Simple(Dipole<T>),
+	Parallel(Vec<Component>),
+	Series(Vec<Component>),
+	Simple(Dipole),
 	Poisoned, // Used as a default state
 }
 
 #[derive(Clone, Debug)]
-pub struct Component<T>
+pub struct Component
 {
-	pub content:   ComponentContent<T>,
-	pub impedance: RatioFrac<Complex<T>>,
+	pub content:   ComponentContent,
+	pub impedance: RatioFrac<Complex<f64>>,
 	pub fore_node: Id,
 }
 
-impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
+impl Component
 {
 	pub fn new() -> Self { Component::default() }
 
-	pub fn impedance<Rhs: RatioFracFloat>(&self, pulse: Rhs) -> Complex<T>
-	{
-		self.impedance.eval(Complex::from(T::from(pulse).unwrap()))
-	}
+	pub fn impedance(&self, pulse: f64) -> Complex<f64> { self.impedance.eval(Complex::from(pulse)) }
 }
 
-impl<T: RatioFracFloat> TryFrom<ComponentContent<T>> for Component<T>
-	where Complex<T>: RatioFracComplexFloat
+impl TryFrom<ComponentContent> for Component
 {
 	type Error = Error;
 
-	fn try_from(mut content: ComponentContent<T>) -> Result<Self>
+	fn try_from(mut content: ComponentContent) -> Result<Self>
 	{
 		use ComponentContent::*;
-		let impedance: RatioFrac<Complex<T>> =
+		let impedance: RatioFrac<Complex<f64>> =
 			match &mut content {
 				Series(components) => {
 					let mut impedance = RatioFrac::default();
@@ -87,24 +80,21 @@ impl<T: RatioFracFloat> TryFrom<ComponentContent<T>> for Component<T>
 	}
 }
 
-impl<T: RatioFracFloat> TryFrom<Dipole<T>> for Component<T> where Complex<T>: RatioFracComplexFloat
+impl TryFrom<Dipole> for Component
 {
 	type Error = Error;
 
-	fn try_from(content: Dipole<T>) -> Result<Self>
-	{
-		Self::try_from(ComponentContent::Simple(content))
-	}
+	fn try_from(content: Dipole) -> Result<Self> { Self::try_from(ComponentContent::Simple(content)) }
 }
 
-impl<T: RatioFracFloat> Component<T>
-	where Complex<T>: RatioFracComplexFloat /* Here is an implementation to setup a circuit without
-	                                         * taking care of voltages and currents. All of these
-	                                         * will be setup afterwards */
+impl Component
+/* Here is an implementation to setup a circuit without
+ * taking care of voltages and currents. All of these
+ * will be setup afterwards */
 {
 	// This does not care about Ids
 	// Pushes a component onto self in serie and updates impedance
-	pub fn push_serie(&mut self, component: Component<T>)
+	pub fn push_serie(&mut self, component: Component)
 	{
 		use ComponentContent::*;
 		match self.content {
@@ -129,7 +119,7 @@ impl<T: RatioFracFloat> Component<T>
 	}
 
 	// Pushes a component onto self in parallel and updates impedance
-	pub fn push_parallel(&mut self, mut component: Component<T>)
+	pub fn push_parallel(&mut self, mut component: Component)
 	{
 		use ComponentContent::*;
 		match self.content {
@@ -179,7 +169,7 @@ impl<T: RatioFracFloat> Component<T>
 	}
 }
 
-impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
+impl Component
 {
 	// Function to be called once when tensions and currents are not yet set.
 	// This function, given a certain frequency, will
@@ -187,10 +177,10 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 	// assiociated	nodes. This function only serves to initialize the circuit as the
 	// next values can be inferred from the initial ones and the frequency.
 	pub fn init_current_tension(&mut self,
-	                            current: Complex<T>,
-	                            tension: Complex<T>,
-	                            pulse: T,
-	                            nodes: &mut HashMap<Id, Node<T>>)
+	                            current: Complex<f64>,
+	                            tension: Complex<f64>,
+	                            pulse: f64,
+	                            nodes: &mut HashMap<Id, Node>)
 	                            -> Result<()>
 	{
 		let node = nodes.get_mut(self.fore_node.as_slice()).unwrap();
@@ -256,7 +246,7 @@ impl<T: RatioFracFloat> Component<T> where Complex<T>: RatioFracComplexFloat
 	// Like with init_current_tension, this function only serves to initialize the
 	// circuit as the next values can be inferred from the initial ones and the
 	// frequency.
-	pub fn init_potentials(&mut self, fore_potential: Complex<T>, nodes: &mut HashMap<Id, Node<T>>)
+	pub fn init_potentials(&mut self, fore_potential: Complex<f64>, nodes: &mut HashMap<Id, Node>)
 	{
 		nodes.get_mut(&self.fore_node)
 		     .expect("Node not found :/")

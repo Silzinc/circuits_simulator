@@ -1,6 +1,5 @@
-use fractios::traits::{RatioFracComplexFloat, RatioFracFloat};
-use num_traits::PrimInt;
-use rustfft::{num_complex::Complex, FftNum, FftPlanner};
+use num_traits::{PrimInt, Zero};
+use rustfft::{num_complex::Complex, FftPlanner};
 
 /*
 This function takes a real valued function g of period 1/Δf, the fundamental frequency Δf and a number of frequencies n_freqs > 0.
@@ -11,16 +10,14 @@ It returns the values of ĝ(0), ĝ(Δf), ĝ(2Δf), ..., ĝ(n_freqs * Δf) where 
 // Time complexity: O(n_freqs log n_freqs) (using FFT)
 // Space complexity: O(n_freqs)
 
-pub(crate) fn fouriers<F, R, I>(g: F, fundamental: R, n_freqs_: I) -> Vec<Complex<R>>
-	where F: Fn(R) -> R,
-	      R: FftNum + RatioFracFloat,
-	      I: PrimInt,
-	      Complex<R>: RatioFracComplexFloat
+pub(crate) fn fouriers<F, I>(g: F, fundamental: f64, n_freqs_: I) -> Vec<Complex<f64>>
+	where F: Fn(f64) -> f64,
+	      I: PrimInt
 {
 	let n_freqs = n_freqs_.to_usize().unwrap();
 	assert!(n_freqs > 0);
 
-	if fundamental.is_negative() {
+	if fundamental.is_sign_negative() {
 		let mut result = fouriers(g, -fundamental, n_freqs_.clone());
 		for c in result.iter_mut() {
 			c.im = -c.im;
@@ -31,16 +28,16 @@ pub(crate) fn fouriers<F, R, I>(g: F, fundamental: R, n_freqs_: I) -> Vec<Comple
 	let delta_f = fundamental;
 	let n = 2 * n_freqs + 1; // We take the 0 frequency and respect the Shannon-Nyquist criterion
 
-	let t = (delta_f * R::from_usize(n).unwrap()).inv();
-	let invn = R::from_usize(n).unwrap().inv();
-	let halft = R::from_f64(0.5).unwrap() * delta_f.inv();
+	let t = (delta_f * n as f64).recip();
+	let invn = (n as f64).recip();
+	let halft = 0.5f64 / delta_f;
 
-	let mut vals = (0..n).map(|i| Complex { re: g(t * R::from_usize(i).unwrap() - halft),
-	                                        im: R::zero(), })
+	let mut vals = (0..n).map(|i| Complex { re: g(t * i as f64 - halft),
+	                                        im: 0f64, })
 	                     .collect::<Vec<_>>();
 
 	if fundamental.is_zero() {
-		return vec![vals.iter().sum::<Complex<R>>() * invn.into()];
+		return vec![vals.iter().sum::<Complex<f64>>() * invn];
 	}
 
 	let mut planner = FftPlanner::new();
@@ -49,7 +46,7 @@ pub(crate) fn fouriers<F, R, I>(g: F, fundamental: R, n_freqs_: I) -> Vec<Comple
 
 	let mut change_sign = false;
 	for i in 0..=n_freqs {
-		vals[i] = vals[i] * invn.into();
+		vals[i] = vals[i] * invn;
 		if change_sign {
 			vals[i] = -vals[i];
 		}

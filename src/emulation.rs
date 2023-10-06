@@ -2,22 +2,20 @@ use crate::{
 	error::{short_circuit_current, Result},
 	structs::{circuit::Circuit, node::Id},
 };
-use fractios::traits::{RatioFracComplexFloat, RatioFracFloat};
 use num::Complex;
 use num_traits::Zero;
 
-impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
+impl Circuit
 {
 	// This function is used to emulate a circuit and returns the currents and
 	// voltages of the node as well as the tensions on the following component
 	pub fn emulate_one(&mut self,
-	                   duration: T,
-	                   step: T,
+	                   duration: f64,
+	                   step: f64,
 	                   node_id: &Id)
-	                   -> Result<(Vec<T>, Vec<T>, Vec<T>)>
+	                   -> Result<(Vec<f64>, Vec<f64>, Vec<f64>)>
 	{
 		self.init()?;
-		let two = T::one() + T::one();
 
 		let node = self.nodes
 		               .get_mut(node_id)
@@ -26,13 +24,11 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 		let initial_tensions = &node.next_comp_tensions;
 		let initial_potentials = &node.potentials;
 
-		let nb_iter = (duration / step).ceil()
-		                               .to_usize()
-		                               .expect(&format!("round({duration:?}/{step:?}) to usize failed"));
+		let nb_iter = (duration / step).ceil() as usize;
 		let mut currents = Vec::with_capacity(nb_iter);
 		let mut tensions = Vec::with_capacity(nb_iter);
 		let mut potentials = Vec::with_capacity(nb_iter);
-		let mut elapsed = T::zero();
+		let mut elapsed = 0f64;
 
 		while elapsed < duration {
 			let mut current = initial_currents[0].re;
@@ -45,12 +41,12 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 				if pulse.is_zero() {
 					return short_circuit_current(&vec![0u8], voltage, &self.content.impedance);
 				}
-				let factor = Complex::new(T::zero(), elapsed * *pulse).exp();
+				let factor = Complex::new(0f64, elapsed * *pulse).exp();
 				// This way we know we can approximate a real function such as current or
 				// tension if we only use positive pulses
-				current += two * (initial_currents[k] * factor).re;
-				tension += two * (initial_tensions[k] * factor).re;
-				potential += two * (initial_potentials[k] * factor).re;
+				current += 2f64 * (initial_currents[k] * factor).re;
+				tension += 2f64 * (initial_tensions[k] * factor).re;
+				potential += 2f64 * (initial_potentials[k] * factor).re;
 			}
 			currents.push(current);
 			tensions.push(tension);
@@ -61,10 +57,10 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 	}
 
 	pub fn emulate_many(&mut self,
-	                    duration: T,
-	                    step: T,
+	                    duration: f64,
+	                    step: f64,
 	                    node_ids: &Vec<Id>)
-	                    -> Result<Vec<(Vec<T>, Vec<T>, Vec<T>)>>
+	                    -> Result<Vec<(Vec<f64>, Vec<f64>, Vec<f64>)>>
 	{
 		self.init()?;
 		let mut results = Vec::with_capacity(node_ids.len());
