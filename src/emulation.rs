@@ -9,8 +9,12 @@ use num_traits::Zero;
 impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 {
 	// This function is used to emulate a circuit and returns the currents and
-	// tensions of a certain node
-	pub fn emulate_one(&mut self, duration: T, step: T, node_id: &Id) -> Result<(Vec<T>, Vec<T>)>
+	// voltages of the node as well as the tensions on the following component
+	pub fn emulate_one(&mut self,
+	                   duration: T,
+	                   step: T,
+	                   node_id: &Id)
+	                   -> Result<(Vec<T>, Vec<T>, Vec<T>)>
 	{
 		self.init()?;
 		let two = T::one() + T::one();
@@ -18,19 +22,22 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 		let node = self.nodes
 		               .get_mut(node_id)
 		               .expect("Node of id {node_id:?} not found :/");
-		let initial_currents = node.currents.clone();
-		let initial_tensions = node.next_comp_tensions.clone();
+		let initial_currents = &node.currents;
+		let initial_tensions = &node.next_comp_tensions;
+		let initial_potentials = &node.potentials;
 
 		let nb_iter = (duration / step).ceil()
 		                               .to_usize()
 		                               .expect(&format!("round({duration:?}/{step:?}) to usize failed"));
 		let mut currents = Vec::with_capacity(nb_iter);
 		let mut tensions = Vec::with_capacity(nb_iter);
+		let mut potentials = Vec::with_capacity(nb_iter);
 		let mut elapsed = T::zero();
 
 		while elapsed < duration {
 			let mut current = initial_currents[0].re;
 			let mut tension = initial_tensions[0].re;
+			let mut potential = initial_potentials[0].re;
 			for (k, (pulse, voltage)) in self.source.voltages.iter().enumerate() {
 				if voltage.is_zero() || pulse.is_zero() {
 					continue;
@@ -43,19 +50,21 @@ impl<T: RatioFracFloat> Circuit<T> where Complex<T>: RatioFracComplexFloat
 				// tension if we only use positive pulses
 				current += two * (initial_currents[k] * factor).re;
 				tension += two * (initial_tensions[k] * factor).re;
+				potential += two * (initial_potentials[k] * factor).re;
 			}
-			currents.push(current); // We only need the real part to emulate a circuit
+			currents.push(current);
 			tensions.push(tension);
+			potentials.push(potential);
 			elapsed += step;
 		}
-		Ok((currents, tensions))
+		Ok((currents, tensions, potentials))
 	}
 
 	pub fn emulate_many(&mut self,
 	                    duration: T,
 	                    step: T,
 	                    node_ids: &Vec<Id>)
-	                    -> Result<Vec<(Vec<T>, Vec<T>)>>
+	                    -> Result<Vec<(Vec<T>, Vec<T>, Vec<T>)>>
 	{
 		self.init()?;
 		let mut results = Vec::with_capacity(node_ids.len());
