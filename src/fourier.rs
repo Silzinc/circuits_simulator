@@ -28,7 +28,7 @@ use rustfft::{num_complex::Complex, FftPlanner};
 ///
 /// O(n_freqs)
 
-pub(crate) fn fouriers<F, I>(g: F, fundamental: f64, n_freqs_: I) -> Vec<Complex<f64>>
+pub fn fouriers<F, I>(g: F, fundamental: f64, n_freqs_: I) -> Vec<Complex<f64>>
 	where F: Fn(f64) -> f64,
 	      I: PrimInt
 {
