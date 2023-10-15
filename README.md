@@ -12,7 +12,3 @@ An algorithm to emulate a certain class of electronical analogical circuits writ
 ## Documentation
 
 Run `cargo doc` and open `target/doc/circuits_simulator/index.html`.
-
-## License
-
-To come...
