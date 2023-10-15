@@ -12,14 +12,18 @@ use num_traits::Zero;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
+/// Represents an electronic circuit.
 pub struct Circuit
 {
+	/// Indicates whether the circuit has been initialized or not.
 	pub is_init: bool,
+	/// The source component of the circuit.
 	pub source:  Source,
+	/// The main component of the circuit.
 	pub content: Component,
-	// This HashMap is only used to access a Node's voltage and current once the simulation has
-	// started This won't be used at all during the setup and shall be initialized when the
-	// simulation starts
+	/// A HashMap that is used to access a Node's voltage and current once the
+	/// simulation has started. This won't be used at all during the setup and
+	/// shall be initialized when the simulation starts.
 	pub nodes:   HashMap<Id, Node>,
 }
 
@@ -36,7 +40,17 @@ impl Circuit
 
 impl Circuit
 {
-	// The following function only assumes the circuit tree is constructed
+	/// Initializes the circuit by setting up the nodes and calculating the
+	/// initial current and tension for each voltage source. Assumes that the
+	/// circuit tree is already constructed.
+	///
+	/// # Errors
+	///
+	/// Returns an error if there is a short circuit in the circuit.
+	///
+	/// # Returns
+	///
+	/// Returns `Ok(())` if the circuit was successfully initialized.
 	pub fn init(&mut self) -> Result<()>
 	{
 		if self.is_init {
@@ -54,14 +68,9 @@ impl Circuit
 			self.content.impedance.inv_inplace();
 			let initial_current = initial_tension * self.content.impedance.eval(Complex::from(*pulse));
 			self.content.impedance.inv_inplace();
-			self.content.init_current_tension(
-			                                   initial_current,
-			                                   initial_tension,
-			                                   *pulse,
-			                                   &mut self.nodes,
-			)?;
 			self.content
-			    .init_potentials(initial_tension, &mut self.nodes);
+			    .init_current_tension(initial_current, initial_tension, *pulse, &mut self.nodes)?;
+			self.content.init_potentials(initial_tension, &mut self.nodes);
 		}
 		self.is_init = true;
 		Ok(())

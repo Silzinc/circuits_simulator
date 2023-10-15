@@ -8,29 +8,35 @@ use crate::{
 		Error::{self, CircuitBuildError},
 		Result,
 	},
-	util::{
-		evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x,
-	},
+	util::{evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x},
 };
 use fractios::RatioFrac;
 use num::complex::Complex;
 use num_traits::Zero;
 use std::collections::HashMap;
 
+/// Represents the content of a circuit component, which can be either a
+/// parallel or series combination of other components, a simple dipole, or a
+/// poisoned state used as a default.
 #[derive(Clone, Debug)]
 pub enum ComponentContent
 {
 	Parallel(Vec<Component>),
 	Series(Vec<Component>),
 	Simple(Dipole),
-	Poisoned, // Used as a default state
+	/// Used as a default state
+	Poisoned,
 }
 
+/// A struct representing a circuit component.
 #[derive(Clone, Debug)]
 pub struct Component
 {
+	/// The content of the component.
 	pub content:   ComponentContent,
+	/// The impedance of the component.
 	pub impedance: RatioFrac<Complex<f64>>,
+	/// The ID of the node connected to the component's fore port.
 	pub fore_node: Id,
 }
 
@@ -38,6 +44,7 @@ impl Component
 {
 	pub fn new() -> Self { Component::default() }
 
+	/// Returns the impedance of the component for a given pulse.
 	pub fn impedance(&self, pulse: f64) -> Complex<f64> { self.impedance.eval(Complex::from(pulse)) }
 }
 
@@ -48,32 +55,29 @@ impl TryFrom<ComponentContent> for Component
 	fn try_from(mut content: ComponentContent) -> Result<Self>
 	{
 		use ComponentContent::*;
-		let impedance: RatioFrac<Complex<f64>> =
-			match &mut content {
-				Series(components) => {
-					let mut impedance = RatioFrac::default();
-					for component in components.iter() {
-						impedance += &component.impedance;
-					}
-					impedance.reduce();
-					impedance
-				},
-				Parallel(components) => {
-					let mut impedance = RatioFrac::default();
-					for component in components.iter_mut() {
-						component.impedance.inv_inplace();
-						impedance += &component.impedance;
-						component.impedance.inv_inplace();
-					}
-					impedance.inv_inplace();
-					impedance.reduce();
-					impedance
-				},
-				Simple(dipole) => RatioFrac::from(dipole.impedance()?),
-				Poisoned => return Err(CircuitBuildError(
-					"Cannot create a component from poisoned content".to_string(),
-				)),
-			};
+		let impedance: RatioFrac<Complex<f64>> = match &mut content {
+			Series(components) => {
+				let mut impedance = RatioFrac::default();
+				for component in components.iter() {
+					impedance += &component.impedance;
+				}
+				impedance.reduce();
+				impedance
+			},
+			Parallel(components) => {
+				let mut impedance = RatioFrac::default();
+				for component in components.iter_mut() {
+					component.impedance.inv_inplace();
+					impedance += &component.impedance;
+					component.impedance.inv_inplace();
+				}
+				impedance.inv_inplace();
+				impedance.reduce();
+				impedance
+			},
+			Simple(dipole) => RatioFrac::from(dipole.impedance()?),
+			Poisoned => return Err(CircuitBuildError("Cannot create a component from poisoned content".to_string())),
+		};
 		Ok(Component { content,
 		               impedance,
 		               fore_node: Id::default() })
@@ -92,8 +96,33 @@ impl Component
  * taking care of voltages and currents. All of these
  * will be setup afterwards */
 {
-	// This does not care about Ids
-	// Pushes a component onto self in serie and updates impedance
+	/// Pushes a component onto self in series and updates impedance.
+	///
+	/// # Arguments
+	///
+	/// * `component` - A `Component` to be pushed onto `self`.
+	///
+	/// # Remarks
+	///
+	/// This method does not care about Ids. If `self` is `Poisoned`, it will be
+	/// replaced by `component`. If `self` is `Series`, `component` will be pushed
+	/// onto the vector of components and the impedance will be updated. If `self`
+	/// is anything else, a new `Series` component will be created with `self` and
+	/// `component` as its components.
+	///
+	/// # Example
+	///
+	/// ```
+	/// use circuits_simulator::structs::{
+	/// 	component::Component,
+	/// 	dipole::Dipole::{Capacitor, Resistor},
+	/// };
+	///
+	/// let mut component1 = Component::try_from(Resistor(10.0)).unwrap();
+	/// let mut component2 = Component::try_from(Capacitor(0.1)).unwrap();
+	///
+	/// component1.push_serie(component2);
+	/// ```
 	pub fn push_serie(&mut self, component: Component)
 	{
 		use ComponentContent::*;
@@ -118,7 +147,31 @@ impl Component
 		};
 	}
 
-	// Pushes a component onto self in parallel and updates impedance
+	/// Pushes a component onto self in parallel and updates impedance
+	///
+	/// # Arguments
+	///
+	/// * `component` - A `Component` to be pushed onto self in parallel
+	///
+	/// This method does not care about Ids. If `self` is `Poisoned`, it will be
+	/// replaced by `component`. If `self` is `Parallel`, `component` will be
+	/// pushed onto the vector of components and the impedance will be updated. If
+	/// `self` is anything else, a new `Parallel` component will be created with
+	/// `self` and `component` as its components.
+	///
+	/// # Example
+	///
+	/// ```
+	/// use circuits_simulator::structs::{
+	/// 	component::Component,
+	/// 	dipole::Dipole::{Capacitor, Resistor},
+	/// };
+	///
+	/// let mut component1 = Component::try_from(Resistor(10.0)).unwrap();
+	/// let mut component2 = Component::try_from(Capacitor(0.1)).unwrap();
+	///
+	/// component1.push_parallel(component2);
+	/// ```
 	pub fn push_parallel(&mut self, mut component: Component)
 	{
 		use ComponentContent::*;
@@ -171,17 +224,24 @@ impl Component
 
 impl Component
 {
-	// Function to be called once when tensions and currents are not yet set.
-	// This function, given a certain frequency, will
-	// infer the tensions and currents of each component and store it in the
-	// assiociated	nodes. This function only serves to initialize the circuit as the
-	// next values can be inferred from the initial ones and the frequency.
-	pub fn init_current_tension(&mut self,
-	                            current: Complex<f64>,
-	                            tension: Complex<f64>,
-	                            pulse: f64,
-	                            nodes: &mut HashMap<Id, Node>)
-	                            -> Result<()>
+	/// Function to be called once when tensions and currents are not yet set.
+	/// This function, given a certain frequency, will
+	/// infer the tensions and currents of each component and store it in the
+	/// associated nodes. This function only serves to initialize the circuit as
+	/// the next values can be inferred from the initial ones and the frequency.
+	///
+	/// # Arguments
+	///
+	/// * `current` - The current of the component.
+	/// * `tension` - The tension of the component.
+	/// * `pulse` - The frequency of the component.
+	/// * `nodes` - The nodes of the component.
+	///
+	/// # Returns
+	///
+	/// Returns a Result containing Ok(()) if the function is successful,
+	/// otherwise it returns an error.
+	pub fn init_current_tension(&mut self, current: Complex<f64>, tension: Complex<f64>, pulse: f64, nodes: &mut HashMap<Id, Node>) -> Result<()>
 	{
 		let node = nodes.get_mut(self.fore_node.as_slice()).unwrap();
 		node.currents.push(current);
@@ -199,8 +259,7 @@ impl Component
 						Otherwise, the emulation for this pulse would not have started or have
 						panicked */
 						// assert!(is_multiple_of_invx(&self.impedance));
-						let tension_factor = evaluate_zero_without_invx(&component.impedance)
-						                     / evaluate_zero_without_invx(&self.impedance);
+						let tension_factor = evaluate_zero_without_invx(&component.impedance) / evaluate_zero_without_invx(&self.impedance);
 						// We factor by the "impedance ratio"
 						component.init_current_tension(current, tension * tension_factor, pulse, nodes)?;
 					} else {
@@ -216,19 +275,13 @@ impl Component
 						let next_actual_admittance = component.impedance.eval(Complex::from(pulse));
 						component.impedance.inv_inplace();
 
-						component.init_current_tension(
-						                               tension * next_actual_admittance,
-						                               tension,
-						                               pulse,
-						                               nodes,
-						)?;
+						component.init_current_tension(tension * next_actual_admittance, tension, pulse, nodes)?;
 					} else if tension.is_zero() {
 						/* We suppose a zero tension is always due to a zero impedance
 						Otherwise, the emulation for this pulse would not have started or have
 						panicked */
 						// assert!(is_multiple_of_x(&self.impedance));
-						let current_factor = evaluate_zero_without_x(&self.impedance)
-						                     / evaluate_zero_without_x(&component.impedance);
+						let current_factor = evaluate_zero_without_x(&self.impedance) / evaluate_zero_without_x(&component.impedance);
 						// We factor by the "admittance ratio"
 						component.init_current_tension(current * current_factor, tension, pulse, nodes)?;
 					} else {
@@ -240,18 +293,15 @@ impl Component
 		Ok(())
 	}
 
-	// Function to be called once tensions and currents are set.
-	// This function, given that the circuit is set at a certain frequency, will
-	// infer the potentials on each node and store them in the `potentials` field.
-	// Like with init_current_tension, this function only serves to initialize the
-	// circuit as the next values can be inferred from the initial ones and the
-	// frequency.
+	/// Function to be called once tensions and currents are set.
+	/// This function, given that the circuit is set at a certain frequency, will
+	/// infer the potentials on each node and store them in the `potentials`
+	/// field. Like with `init_current_tension`, this function only serves to
+	/// initialize the circuit as the next values can be inferred from the initial
+	/// ones and the frequency.
 	pub fn init_potentials(&mut self, fore_potential: Complex<f64>, nodes: &mut HashMap<Id, Node>)
 	{
-		nodes.get_mut(&self.fore_node)
-		     .expect("Node not found :/")
-		     .potentials
-		     .push(fore_potential);
+		nodes.get_mut(&self.fore_node).expect("Node not found :/").potentials.push(fore_potential);
 		use ComponentContent::*;
 		match &mut self.content {
 			Parallel(components) =>

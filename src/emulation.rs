@@ -7,19 +7,28 @@ use num_traits::Zero;
 
 impl Circuit
 {
-	// This function is used to emulate a circuit and returns the currents and
-	// voltages of the node as well as the tensions on the following component
-	pub fn emulate_one(&mut self,
-	                   duration: f64,
-	                   step: f64,
-	                   node_id: &Id)
-	                   -> Result<(Vec<f64>, Vec<f64>, Vec<f64>)>
+	/// This function is used to emulate a circuit and returns the currents and
+	/// voltages of the node as well as the tensions on the following component
+	///
+	/// # Arguments
+	///
+	/// * `duration` - The duration of the emulation in seconds
+	/// * `step` - The time step used for the emulation in seconds
+	/// * `node_id` - The ID of the node to emulate
+	///
+	/// # Returns
+	///
+	/// A tuple containing the vectors of currents, tensions, and potentials of
+	/// the node
+	///
+	/// # Errors
+	///
+	/// Returns an error if the initialization of the circuit fails
+	pub fn emulate_one(&mut self, duration: f64, step: f64, node_id: &Id) -> Result<(Vec<f64>, Vec<f64>, Vec<f64>)>
 	{
 		self.init()?;
 
-		let node = self.nodes
-		               .get_mut(node_id)
-		               .expect("Node of id {node_id:?} not found :/");
+		let node = self.nodes.get_mut(node_id).expect("Node of id {node_id:?} not found :/");
 		let initial_currents = &node.currents;
 		let initial_tensions = &node.next_comp_tensions;
 		let initial_potentials = &node.potentials;
@@ -56,11 +65,28 @@ impl Circuit
 		Ok((currents, tensions, potentials))
 	}
 
-	pub fn emulate_many(&mut self,
-	                    duration: f64,
-	                    step: f64,
-	                    node_ids: &Vec<Id>)
-	                    -> Result<Vec<(Vec<f64>, Vec<f64>, Vec<f64>)>>
+	/// Emulates the circuit for multiple nodes for a given duration and step
+	/// size.
+	///
+	/// # Arguments
+	///
+	/// * `duration` - The duration of the emulation in seconds.
+	/// * `step` - The step size of the emulation in seconds.
+	/// * `node_ids` - A vector of node IDs to emulate.
+	///
+	/// # Returns
+	///
+	/// A `Result` containing a vector of tuples, where each tuple contains three
+	/// vectors:
+	/// - The first vector contains the time values of the simulation.
+	/// - The second vector contains the voltage values of the node.
+	/// - The third vector contains the current values of the node.
+	///
+	/// # Errors
+	///
+	/// Returns an error if the initialization of the circuit fails or if the
+	/// emulation of a node fails.
+	pub fn emulate_many(&mut self, duration: f64, step: f64, node_ids: &Vec<Id>) -> Result<Vec<(Vec<f64>, Vec<f64>, Vec<f64>)>>
 	{
 		self.init()?;
 		let mut results = Vec::with_capacity(node_ids.len());

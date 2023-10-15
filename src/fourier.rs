@@ -1,14 +1,32 @@
 use num_traits::{PrimInt, Zero};
 use rustfft::{num_complex::Complex, FftPlanner};
 
-/*
-This function takes a real valued function g of period 1/Δf, the fundamental frequency Δf and a number of frequencies n_freqs > 0.
-It returns the values of ĝ(0), ĝ(Δf), ĝ(2Δf), ..., ĝ(n_freqs * Δf) where ĝ is the Fourier transform of g and Δf is the fundamental frequency.
-ĝ(f) = Δf * ∫ g(t) exp(-2πi f t) dt with the integral from -1/2Δf to 1/2Δf.
-*/
-
-// Time complexity: O(n_freqs log n_freqs) (using FFT)
-// Space complexity: O(n_freqs)
+/// This function takes a real valued function g of period 1/Δf, the fundamental
+/// frequency Δf and a number of frequencies n_freqs > 0. It returns the values
+/// of ĝ(0), ĝ(Δf), ĝ(2Δf), ..., ĝ(n_freqs * Δf) where ĝ is the Fourier
+/// transform of g and Δf is the fundamental frequency. ĝ(f) = Δf * ∫ g(t)
+/// exp(-2πi f t) dt with the integral from -1/2Δf to 1/2Δf.
+///
+/// # Arguments
+///
+/// * `g` - A closure that takes a `f64` argument and returns a `f64` value.
+///   This is the real valued function of period 1/Δf.
+/// * `fundamental` - A `f64` value representing the fundamental frequency Δf.
+/// * `n_freqs_` - An integer value representing the number of frequencies such
+///   that n_freqs_ > 0.
+///
+/// # Returns
+///
+/// A `Vec` of `Complex<f64>` values representing the Fourier transform of g
+/// evaluated at ĝ(0), ĝ(Δf), ĝ(2Δf), ..., ĝ(n_freqs * Δf).
+///
+/// # Time complexity
+///
+/// O(n_freqs log n_freqs) (using FFT)
+///
+/// # Space complexity
+///
+/// O(n_freqs)
 
 pub(crate) fn fouriers<F, I>(g: F, fundamental: f64, n_freqs_: I) -> Vec<Complex<f64>>
 	where F: Fn(f64) -> f64,

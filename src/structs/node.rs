@@ -5,16 +5,27 @@ use super::{
 use num::Complex;
 use std::collections::HashMap;
 
-// A linked list would be a better fit
+// TODO: A linked list would be a better fit
+/// A node is a point in a circuit where two or more circuit components meet. It
+/// is represented by a vector of bytes that gives the path to find it in the
+/// node tree.
 pub(crate) type Id = Vec<u8>;
 
+/// A node in a circuit.
 #[derive(Clone, Debug)]
 pub struct Node
 {
-	pub id:                 Id,
+	/// The ID of the node.
+	pub id: Id,
+
+	/// The tensions of the next components connected to the node for each pulse.
 	pub next_comp_tensions: Vec<Complex<f64>>,
-	pub potentials:         Vec<Complex<f64>>,
-	pub currents:           Vec<Complex<f64>>,
+
+	/// The potentials of the node for each pulse.
+	pub potentials: Vec<Complex<f64>>,
+
+	/// The currents flowing through the node for each pulse.
+	pub currents: Vec<Complex<f64>>,
 }
 
 impl Node
@@ -28,8 +39,24 @@ impl Node
 	}
 }
 
+/// Implementation of the `Component` trait for the `Node` struct.
 impl Component
 {
+	/// Returns an `Option` containing a reference to a `Component` based on its
+	/// ID.
+	///
+	/// # Arguments
+	///
+	/// * `id` - A slice of bytes representing the ID of the `Component`.
+	///
+	/// # Panics
+	///
+	/// Panics if the ID is empty.
+	///
+	/// # Returns
+	///
+	/// An `Option` containing a reference to a `Component` if it exists,
+	/// otherwise `None`.
 	fn get_comp_by_slice(&self, id: &[u8]) -> Option<&Component>
 	{
 		if id.len() == 0 {
@@ -53,12 +80,25 @@ impl Component
 		}
 	}
 
-	pub fn get_comp_by_id(&mut self, id: Id) -> Option<&Component>
-	{
-		self.get_comp_by_slice(id.as_slice())
-	}
+	/// Returns an `Option` containing a reference to a `Component` based on its
+	/// ID.
+	///
+	/// # Arguments
+	///
+	/// * `id` - An `Id` representing the ID of the `Component`.
+	///
+	/// # Returns
+	///
+	/// An `Option` containing a reference to a `Component` if it exists,
+	/// otherwise `None`.
+	pub fn get_comp_by_id(&mut self, id: Id) -> Option<&Component> { self.get_comp_by_slice(id.as_slice()) }
 
-	pub fn set_ids(&mut self, id: &Id)
+	/// Sets the IDs of the `Component` and its children.
+	///
+	/// # Arguments
+	///
+	/// * `id` - An `Id` representing the ID of the `Component`.
+	fn set_ids(&mut self, id: &Id)
 	{
 		use ComponentContent::*;
 		self.fore_node = id.clone();
@@ -76,7 +116,13 @@ impl Component
 		}
 	}
 
-	pub fn setup_nodes(&self, nodes: &mut HashMap<Id, Node>)
+	/// Sets up the nodes of the `Component` and its children.
+	///
+	/// # Arguments
+	///
+	/// * `nodes` - A mutable reference to a `HashMap` containing the nodes of the
+	///   circuit.
+	fn setup_nodes(&self, nodes: &mut HashMap<Id, Node>)
 	{
 		let id = &self.fore_node;
 		let mut node = Node::new();
@@ -97,10 +143,13 @@ impl Component
 	}
 }
 
+/// Implementation of the `Circuit` struct.
 impl Circuit
 {
+	/// Sets up the IDs of the `Circuit` and its components.
 	pub fn setup_ids(&mut self) { self.content.set_ids(&vec![0u8]); }
 
+	/// Sets up the nodes of the `Circuit` and its components.
 	pub fn setup_nodes(&mut self)
 	{
 		self.setup_ids();
