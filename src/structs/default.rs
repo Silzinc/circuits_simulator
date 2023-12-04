@@ -1,6 +1,4 @@
-use super::component::*;
-use super::dipole::Dipole;
-use super::node::*;
+use super::{component::*, dipole::Dipole, node::*};
 use fractios::RatioFrac;
 use std::default::Default;
 
