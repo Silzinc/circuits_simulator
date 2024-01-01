@@ -4,16 +4,19 @@ use std::default::Default;
 
 impl Default for Dipole
 {
+	#[inline]
 	fn default() -> Self { Dipole::Poisoned }
 }
 
 impl Default for ComponentContent
 {
+	#[inline]
 	fn default() -> Self { ComponentContent::Poisoned }
 }
 
 impl Default for Component
 {
+	#[inline]
 	fn default() -> Self
 	{
 		Component { content:    ComponentContent::default(),
@@ -25,6 +28,7 @@ impl Default for Component
 
 impl Default for Node
 {
+	#[inline]
 	fn default() -> Self
 	{
 		Node { id:                 Id::default(),

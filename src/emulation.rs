@@ -86,6 +86,7 @@ impl Circuit
 	///
 	/// Returns an error if the initialization of the circuit fails or if the
 	/// emulation of a node fails.
+	#[inline]
 	pub fn emulate_many(&mut self, duration: f64, step: f64, node_ids: &Vec<Id>) -> Result<Vec<(Vec<f64>, Vec<f64>, Vec<f64>)>>
 	{
 		self.init()?;

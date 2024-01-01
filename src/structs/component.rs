@@ -21,6 +21,7 @@ pub(super) enum ComponentInitState
 
 impl Default for ComponentInitState
 {
+	#[inline]
 	fn default() -> Self { ComponentInitState::None }
 }
 
@@ -52,14 +53,17 @@ pub struct Component
 
 impl Component
 {
+	#[inline]
 	pub fn new() -> Self { Component::default() }
 
 	/// Returns the impedance of the component for a given pulse.
+	#[inline]
 	pub fn impedance(&self, pulse: f64) -> Complex<f64> { self.impedance.eval(Complex::from(pulse)) }
 }
 
 impl From<ComponentContent> for Component
 {
+	#[inline]
 	fn from(content: ComponentContent) -> Self
 	{
 		Component { content,
@@ -71,6 +75,7 @@ impl From<ComponentContent> for Component
 
 impl From<Dipole> for Component
 {
+	#[inline]
 	fn from(content: Dipole) -> Self { Self::from(ComponentContent::Simple(content)) }
 }
 
@@ -105,6 +110,7 @@ impl Component
 	///
 	/// component1.push_serie(component2);
 	/// ```
+	#[inline]
 	pub fn push_serie(&mut self, component: Component)
 	{
 		use ComponentContent::*;
@@ -140,6 +146,7 @@ impl Component
 	///
 	/// component1.push_parallel(component2);
 	/// ```
+	#[inline]
 	pub fn push_parallel(&mut self, component: Component)
 	{
 		use ComponentContent::*;
@@ -151,7 +158,7 @@ impl Component
 	}
 
 	// Swaps two components in a branch
-
+	#[inline]
 	pub fn swap(&mut self, index1: usize, index2: usize) -> Result<()>
 	{
 		use ComponentContent::*;

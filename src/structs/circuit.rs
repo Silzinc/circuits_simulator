@@ -29,6 +29,7 @@ pub struct Circuit
 
 impl Circuit
 {
+	#[inline]
 	pub fn new() -> Self
 	{
 		Self { is_init: false,
@@ -76,6 +77,7 @@ impl Circuit
 		Ok(())
 	}
 
+	#[inline]
 	pub fn uninit(&mut self)
 	{
 		self.is_init = false;

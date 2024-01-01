@@ -14,13 +14,16 @@ pub struct Source
 impl Source
 {
 	/// Creates a new `Source` with an empty vector of voltages.
+	#[inline]
 	pub fn new() -> Self { Source { voltages: vec![] } }
 
 	/// Sets the voltage at a specific index in the `voltages` vector.
+	#[inline]
 	pub fn set_voltage(&mut self, index: usize, voltage: Complex<f64>) { self.voltages[index].1 = voltage; }
 
 	/// Adds a new pulse to the `voltages` vector at the specified time.
 	/// The pulse is represented by a voltage value.
+	#[inline]
 	pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>)
 	{
 		let index = self.voltages.iter().position(|(f, _)| *f > pulse).unwrap_or(self.voltages.len());
