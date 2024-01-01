@@ -5,7 +5,7 @@ use super::{
 use num::Complex;
 use std::collections::HashMap;
 
-// TODO: A linked list would be a better fit
+// IMPROVEMENT: A linked list would probably be a better fit
 /// A node is a point in a circuit where two or more circuit components meet. It
 /// is represented by a vector of bytes that gives the path to find it in the
 /// node tree.
@@ -30,6 +30,7 @@ pub struct Node
 
 impl Node
 {
+	#[inline]
 	pub fn new() -> Self
 	{
 		Node { id:                 Id::new(),
@@ -91,6 +92,7 @@ impl Component
 	///
 	/// An `Option` containing a reference to a `Component` if it exists,
 	/// otherwise `None`.
+	#[inline]
 	pub fn get_comp_by_id(&mut self, id: Id) -> Option<&Component> { self.get_comp_by_slice(id.as_slice()) }
 
 	/// Sets the IDs of the `Component` and its children.
@@ -98,7 +100,7 @@ impl Component
 	/// # Arguments
 	///
 	/// * `id` - An `Id` representing the ID of the `Component`.
-	fn set_ids(&mut self, id: &Id)
+	fn set_id(&mut self, id: &Id)
 	{
 		use ComponentContent::*;
 		self.fore_node = id.clone();
@@ -108,7 +110,7 @@ impl Component
 				next_id.extend_from_slice(&self.fore_node);
 				next_id.push(0u8);
 				for component in components.iter_mut() {
-					component.set_ids(&next_id);
+					component.set_id(&next_id);
 					next_id[self.fore_node.len()] += 1u8;
 				}
 			},
@@ -117,7 +119,9 @@ impl Component
 	}
 
 	/// Sets up the nodes of the `Component` and its children. In particular, the
-	/// `nodes` HashMap is filled with the nodes of the circuit.
+	/// `nodes` HashMap is filled with the nodes of the circuit. It is assumed
+	/// that the IDs of the `Component` and its children are already
+	/// set.
 	///
 	/// # Arguments
 	///
@@ -125,12 +129,13 @@ impl Component
 	///   circuit.
 	fn setup_nodes(&self, nodes: &mut HashMap<Id, Node>)
 	{
+		use ComponentContent::*;
 		let id = &self.fore_node;
 		let mut node = Node::new();
 		node.id = id.clone();
 		nodes.insert(id.clone(), node);
 		match &self.content {
-			ComponentContent::Series(components) | ComponentContent::Parallel(components) =>
+			Series(components) | Parallel(components) =>
 				for component in components.iter() {
 					component.setup_nodes(nodes);
 				},
@@ -142,13 +147,11 @@ impl Component
 /// Implementation of the `Circuit` struct.
 impl Circuit
 {
-	/// Sets up the IDs of the `Circuit` and its components.
-	pub fn setup_ids(&mut self) { self.content.set_ids(&vec![0u8]); }
-
 	/// Sets up the nodes IDs of the `Circuit` and its components.
+	#[inline]
 	pub fn setup_nodes(&mut self)
 	{
-		self.setup_ids();
+		self.content.set_id(&vec![0u8]);
 		self.content.setup_nodes(&mut self.nodes);
 	}
 }
