@@ -15,7 +15,7 @@ use std::collections::HashMap;
 /// Represents an electronic circuit.
 pub struct Circuit
 {
-	/// Indicates whether the circuit has been initialized or not.
+	/// Indicates whether the circuit has been initialised or not.
 	pub is_init: bool,
 	/// The source component of the circuit.
 	pub source:  Source,
@@ -74,5 +74,11 @@ impl Circuit
 		}
 		self.is_init = true;
 		Ok(())
+	}
+
+	pub fn uninit(&mut self)
+	{
+		self.is_init = false;
+		self.nodes.clear();
 	}
 }
