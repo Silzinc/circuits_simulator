@@ -1,5 +1,5 @@
 use super::{
-	circuit::Circuit,
+	circuit::{Circuit, CircuitInitState},
 	component::{Component, ComponentContent},
 };
 use num::Complex;
@@ -153,7 +153,7 @@ impl Component
 	///
 	/// * `nodes` - A mutable reference to a `HashMap` containing the nodes of the
 	///   circuit.
-	fn setup_nodes(&self, nodes: &mut HashMap<Id, Node>)
+	fn init_nodes(&self, nodes: &mut HashMap<Id, Node>)
 	{
 		use ComponentContent::*;
 		let id = &self.fore_node;
@@ -163,7 +163,7 @@ impl Component
 		match &self.content {
 			Series(components) | Parallel(components) =>
 				for component in components.iter() {
-					component.setup_nodes(nodes);
+					component.init_nodes(nodes);
 				},
 			_ => (),
 		}
@@ -175,9 +175,13 @@ impl Circuit
 {
 	/// Sets up the nodes IDs of the `Circuit` and its components.
 	#[inline]
-	pub fn setup_nodes(&mut self)
+	pub fn init_nodes(&mut self)
 	{
+		if self.init_state > CircuitInitState::CircuitNodes {
+			return;
+		}
 		self.content.set_id(&vec![0u8]);
-		self.content.setup_nodes(&mut self.nodes);
+		self.content.init_nodes(&mut self.nodes);
+		self.init_state = CircuitInitState::CircuitNodes;
 	}
 }

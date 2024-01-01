@@ -11,20 +11,40 @@ use num::complex::Complex;
 use num_traits::Zero;
 use std::collections::HashMap;
 
+/// The initialisation state of a circuit.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Copy)]
+pub enum CircuitInitState
+{
+	/// The circuit is not initialised.
+	None         = 0,
+	/// The nodes of the circuit are initialised, though they have no current or
+	/// tension set. The circuit is built and the impedances are calculated.
+	CircuitNodes = 1,
+	/// The source of the circuit is initialised. The circuit is ready to be
+	/// emulated.
+	Source       = 2,
+}
+
+impl Default for CircuitInitState
+{
+	#[inline]
+	fn default() -> Self { Self::None }
+}
+
 #[derive(Clone, Debug)]
 /// Represents an electronic circuit.
 pub struct Circuit
 {
-	/// Indicates whether the circuit has been initialised or not.
-	pub is_init: bool,
+	/// The initialisation state of the circuit.
+	pub init_state: CircuitInitState,
 	/// The source component of the circuit.
-	pub source:  Source,
+	pub source:     Source,
 	/// The main component of the circuit.
-	pub content: Component,
+	pub content:    Component,
 	/// A HashMap that is used to access a Node's voltage and current once the
 	/// simulation has started. This won't be used at all during the setup and
 	/// shall be initialized when the simulation starts.
-	pub nodes:   HashMap<Id, Node>,
+	pub nodes:      HashMap<Id, Node>,
 }
 
 impl Circuit
@@ -32,10 +52,10 @@ impl Circuit
 	#[inline]
 	pub fn new() -> Self
 	{
-		Self { is_init: false,
-		       source:  Source::new(),
-		       content: Component::default(),
-		       nodes:   HashMap::new(), }
+		Self { init_state: CircuitInitState::default(),
+		       source:     Source::new(),
+		       content:    Component::default(),
+		       nodes:      HashMap::new(), }
 	}
 }
 
@@ -54,10 +74,10 @@ impl Circuit
 	/// Returns `Ok(())` if the circuit was successfully initialized.
 	pub fn init(&mut self) -> Result<()>
 	{
-		if self.is_init {
+		if self.init_state == CircuitInitState::Source {
 			return Ok(());
 		}
-		self.setup_nodes();
+		self.init_nodes();
 		self.content.init_impedance()?;
 		for (pulse, voltage) in self.source.voltages.iter() {
 			if voltage.is_zero() {
@@ -73,14 +93,29 @@ impl Circuit
 			self.content
 			    .init_current_tension_potential(initial_current, initial_tension, initial_tension, *pulse, &mut self.nodes)?;
 		}
-		self.is_init = true;
+		self.init_state = CircuitInitState::Source;
 		Ok(())
 	}
 
+	// To be called when the circuit is changed
 	#[inline]
-	pub fn uninit(&mut self)
+	pub fn uninit_all(&mut self)
 	{
-		self.is_init = false;
+		self.init_state = CircuitInitState::None;
 		self.nodes.clear();
+		self.content.uninit_all();
+	}
+
+	// To be called when the source is changed
+	#[inline]
+	pub fn uninit_source(&mut self)
+	{
+		self.init_state = self.init_state.min(CircuitInitState::CircuitNodes);
+		for node in self.nodes.values_mut() {
+			node.next_comp_tensions.clear();
+			node.currents.clear();
+			node.potentials.clear();
+		}
+		self.content.uninit_current_tension_potential();
 	}
 }

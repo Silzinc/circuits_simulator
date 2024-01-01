@@ -11,11 +11,16 @@ use num::complex::Complex;
 use num_traits::Zero;
 use std::collections::HashMap;
 
+/// Represents the initialisation state of a component.
 #[derive(Clone, Debug, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub(super) enum ComponentInitState
+pub enum ComponentInitState
 {
+	/// No initialisation
 	None      = 0,
+	/// The impedances have been computed
 	Impedance = 1,
+	/// The initial currents, tensions, and potentials have been computed,
+	/// provided a source
 	CurrentTensionPotential = 2,
 }
 
@@ -321,4 +326,10 @@ impl Component
 		self.init_state = ComponentInitState::CurrentTensionPotential;
 		Ok(())
 	}
+
+	#[inline]
+	pub fn uninit_current_tension_potential(&mut self) { self.init_state = self.init_state.min(ComponentInitState::Impedance) }
+
+	#[inline]
+	pub fn uninit_all(&mut self) { self.init_state = ComponentInitState::None }
 }
