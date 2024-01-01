@@ -43,21 +43,8 @@ impl Node
 /// Implementation of the `Component` trait for the `Node` struct.
 impl Component
 {
-	/// Returns an `Option` containing a reference to a `Component` based on its
-	/// ID.
-	///
-	/// # Arguments
-	///
-	/// * `id` - A slice of bytes representing the ID of the `Component`.
-	///
-	/// # Panics
-	///
-	/// Panics if the ID is empty.
-	///
-	/// # Returns
-	///
-	/// An `Option` containing a reference to a `Component` if it exists,
-	/// otherwise `None`.
+	/// Same as `get_comp_by_id` but the input is a slice of bytes instead of an
+	/// `Id`.
 	fn get_comp_by_slice(&self, id: &[u8]) -> Option<&Component>
 	{
 		if id.len() == 0 {
@@ -81,6 +68,31 @@ impl Component
 		}
 	}
 
+	/// Same as `get_comp_by_id_mut` but the input is a slice of bytes instead of
+	/// an `Id`.
+	fn get_comp_by_slice_mut(&mut self, id: &[u8]) -> Option<&mut Component>
+	{
+		if id.len() == 0 {
+			panic!("The id is empty")
+		} else {
+			match &mut self.content {
+				ComponentContent::Series(components) | ComponentContent::Parallel(components) => {
+					let index = id[0] as usize;
+					if index < components.len() {
+						if id.len() == 1 {
+							Some(&mut components[index])
+						} else {
+							components[index].get_comp_by_slice_mut(&id[1..])
+						}
+					} else {
+						None
+					}
+				},
+				_ => None,
+			}
+		}
+	}
+
 	/// Returns an `Option` containing a reference to a `Component` based on its
 	/// ID.
 	///
@@ -94,6 +106,20 @@ impl Component
 	/// otherwise `None`.
 	#[inline]
 	pub fn get_comp_by_id(&mut self, id: Id) -> Option<&Component> { self.get_comp_by_slice(id.as_slice()) }
+
+	/// Returns an `Option` containing a mutable reference to a `Component` based
+	/// on its ID.
+	///
+	/// # Arguments
+	///
+	/// * `id` - An `Id` representing the ID of the `Component`.
+	///
+	/// # Returns
+	///
+	/// An `Option` containing a reference to a `Component` if it exists,
+	/// otherwise `None`.
+	#[inline]
+	pub fn get_comp_by_id_mut(&mut self, id: Id) -> Option<&mut Component> { self.get_comp_by_slice_mut(id.as_slice()) }
 
 	/// Sets the IDs of the `Component` and its children.
 	///
@@ -120,8 +146,7 @@ impl Component
 
 	/// Sets up the nodes of the `Component` and its children. In particular, the
 	/// `nodes` HashMap is filled with the nodes of the circuit. It is assumed
-	/// that the IDs of the `Component` and its children are already
-	/// set.
+	/// that the IDs of the `Component` and its children are already set.
 	///
 	/// # Arguments
 	///
