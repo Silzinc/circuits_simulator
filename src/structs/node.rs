@@ -130,15 +130,10 @@ impl Component
 		node.id = id.clone();
 		nodes.insert(id.clone(), node);
 		match &self.content {
-			ComponentContent::Series(components) | ComponentContent::Parallel(components) => {
-				let mut next_id = Id::with_capacity(id.len() + 1);
-				next_id.extend_from_slice(id);
-				next_id.push(0u8);
+			ComponentContent::Series(components) | ComponentContent::Parallel(components) =>
 				for component in components.iter() {
 					component.setup_nodes(nodes);
-					next_id[id.len()] += 1u8;
-				}
-			},
+				},
 			_ => (),
 		}
 	}
