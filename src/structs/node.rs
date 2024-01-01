@@ -32,7 +32,7 @@ impl Node
 {
 	pub fn new() -> Self
 	{
-		Node { id:                 Id::default(),
+		Node { id:                 Id::new(),
 		       next_comp_tensions: Vec::new(),
 		       potentials:         Vec::new(),
 		       currents:           Vec::new(), }
@@ -116,7 +116,8 @@ impl Component
 		}
 	}
 
-	/// Sets up the nodes of the `Component` and its children.
+	/// Sets up the nodes of the `Component` and its children. In particular, the
+	/// `nodes` HashMap is filled with the nodes of the circuit.
 	///
 	/// # Arguments
 	///
@@ -149,7 +150,7 @@ impl Circuit
 	/// Sets up the IDs of the `Circuit` and its components.
 	pub fn setup_ids(&mut self) { self.content.set_ids(&vec![0u8]); }
 
-	/// Sets up the nodes of the `Circuit` and its components.
+	/// Sets up the nodes IDs of the `Circuit` and its components.
 	pub fn setup_nodes(&mut self)
 	{
 		self.setup_ids();

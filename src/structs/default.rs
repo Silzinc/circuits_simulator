@@ -16,9 +16,10 @@ impl Default for Component
 {
 	fn default() -> Self
 	{
-		Component { content:   ComponentContent::default(),
-		            impedance: RatioFrac::default(),
-		            fore_node: Id::default(), }
+		Component { content:    ComponentContent::default(),
+		            impedance:  RatioFrac::default(),
+		            fore_node:  Id::default(),
+		            init_state: ComponentInitState::default(), }
 	}
 }
 

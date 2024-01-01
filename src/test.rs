@@ -34,8 +34,8 @@ fn test_() -> crate::error::Result<()>
 	// Create the serial RC circuit
 	let mut c = Circuit::new();
 	c.source = Source::from_fn(square_wave, duration, n_freqs);
-	c.content.push_serie(Component::try_from(Resistor(5000.))?); // 1 kΩ, at position [0, 0]
-	c.content.push_serie(Component::try_from(Capacitor(100e-6))?); // 100 µF at position [0, 1]
+	c.content.push_serie(Component::from(Resistor(5000.))); // 1 kΩ, at position [0, 0]
+	c.content.push_serie(Component::from(Capacitor(100e-6))); // 100 µF at position [0, 1]
 
 	// With this, the attenuation time is 500 ms
 

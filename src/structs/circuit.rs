@@ -57,6 +57,7 @@ impl Circuit
 			return Ok(());
 		}
 		self.setup_nodes();
+		self.content.init_impedance()?;
 		for (pulse, voltage) in self.source.voltages.iter() {
 			if voltage.is_zero() {
 				continue;
@@ -69,8 +70,7 @@ impl Circuit
 			let initial_current = initial_tension * self.content.impedance.eval(Complex::from(*pulse));
 			self.content.impedance.inv_inplace();
 			self.content
-			    .init_current_tension(initial_current, initial_tension, *pulse, &mut self.nodes)?;
-			self.content.init_potentials(initial_tension, &mut self.nodes);
+			    .init_current_tension_potential(initial_current, initial_tension, initial_tension, *pulse, &mut self.nodes)?;
 		}
 		self.is_init = true;
 		Ok(())

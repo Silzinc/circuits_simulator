@@ -3,17 +3,26 @@ use super::{
 	node::{Id, Node},
 };
 use crate::{
-	error::{
-		short_circuit_current, short_circuit_tension,
-		Error::{self, CircuitBuildError},
-		Result,
-	},
+	error::{short_circuit_current, short_circuit_tension, Error::CircuitBuildError, Result},
 	util::{evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x},
 };
 use fractios::RatioFrac;
 use num::complex::Complex;
 use num_traits::Zero;
 use std::collections::HashMap;
+
+#[derive(Clone, Debug, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) enum ComponentInitState
+{
+	None      = 0,
+	Impedance = 1,
+	CurrentTensionPotential = 2,
+}
+
+impl Default for ComponentInitState
+{
+	fn default() -> Self { ComponentInitState::None }
+}
 
 /// Represents the content of a circuit component, which can be either a
 /// parallel or series combination of other components, a simple dipole, or a
@@ -33,11 +42,12 @@ pub enum ComponentContent
 pub struct Component
 {
 	/// The content of the component.
-	pub content:   ComponentContent,
+	pub content:           ComponentContent,
 	/// The impedance of the component.
-	pub impedance: RatioFrac<Complex<f64>>,
+	pub impedance:         RatioFrac<Complex<f64>>,
 	/// The ID of the node connected to the component's fore port.
-	pub fore_node: Id,
+	pub fore_node:         Id,
+	pub(super) init_state: ComponentInitState,
 }
 
 impl Component
@@ -48,55 +58,27 @@ impl Component
 	pub fn impedance(&self, pulse: f64) -> Complex<f64> { self.impedance.eval(Complex::from(pulse)) }
 }
 
-impl TryFrom<ComponentContent> for Component
+impl From<ComponentContent> for Component
 {
-	type Error = Error;
-
-	fn try_from(mut content: ComponentContent) -> Result<Self>
+	fn from(content: ComponentContent) -> Self
 	{
-		use ComponentContent::*;
-		let impedance: RatioFrac<Complex<f64>> = match &mut content {
-			Series(components) => {
-				let mut impedance = RatioFrac::default();
-				for component in components.iter() {
-					impedance += &component.impedance;
-				}
-				impedance.reduce();
-				impedance
-			},
-			Parallel(components) => {
-				let mut impedance = RatioFrac::default();
-				for component in components.iter_mut() {
-					component.impedance.inv_inplace();
-					impedance += &component.impedance;
-					component.impedance.inv_inplace();
-				}
-				impedance.inv_inplace();
-				impedance.reduce();
-				impedance
-			},
-			Simple(dipole) => RatioFrac::from(dipole.impedance()?),
-			Poisoned => return Err(CircuitBuildError("Cannot create a component from poisoned content".to_string())),
-		};
-		Ok(Component { content,
-		               impedance,
-		               fore_node: Id::default() })
+		Component { content,
+		            impedance: RatioFrac::default(),
+		            fore_node: Id::default(),
+		            init_state: ComponentInitState::default() }
 	}
 }
 
-impl TryFrom<Dipole> for Component
+impl From<Dipole> for Component
 {
-	type Error = Error;
-
-	fn try_from(content: Dipole) -> Result<Self> { Self::try_from(ComponentContent::Simple(content)) }
+	fn from(content: Dipole) -> Self { Self::from(ComponentContent::Simple(content)) }
 }
 
 impl Component
-/* Here is an implementation to setup a circuit without
- * taking care of voltages and currents. All of these
- * will be setup afterwards */
+// Here is an implementation to setup a circuit without taking care of impedances,
+// currents, tensions and potentials. All of these will be setup afterwards
 {
-	/// Pushes a component onto self in series and updates impedance.
+	/// Pushes a component onto self in series.
 	///
 	/// # Arguments
 	///
@@ -118,8 +100,8 @@ impl Component
 	/// 	dipole::Dipole::{Capacitor, Resistor},
 	/// };
 	///
-	/// let mut component1 = Component::try_from(Resistor(10.0)).unwrap();
-	/// let mut component2 = Component::try_from(Capacitor(0.1)).unwrap();
+	/// let mut component1 = Component::from(Resistor(10.0));
+	/// let mut component2 = Component::from(Capacitor(0.1));
 	///
 	/// component1.push_serie(component2);
 	/// ```
@@ -127,27 +109,13 @@ impl Component
 	{
 		use ComponentContent::*;
 		match self.content {
-			Poisoned => {
-				self.content = component.content;
-				self.impedance = component.impedance;
-			},
-			Series(ref mut components) => {
-				self.impedance += &component.impedance;
-				self.impedance.reduce();
-				components.push(component);
-			},
-			_ => {
-				let mut new_impedance = &self.impedance + &component.impedance;
-				new_impedance.reduce();
-
-				self.content = Series(vec![std::mem::take(self), component]);
-
-				self.impedance = new_impedance;
-			},
+			Poisoned => self.content = component.content,
+			Series(ref mut components) => components.push(component),
+			_ => self.content = Series(vec![std::mem::take(self), component]),
 		};
 	}
 
-	/// Pushes a component onto self in parallel and updates impedance
+	/// Pushes a component onto self in parallel.
 	///
 	/// # Arguments
 	///
@@ -172,40 +140,13 @@ impl Component
 	///
 	/// component1.push_parallel(component2);
 	/// ```
-	pub fn push_parallel(&mut self, mut component: Component)
+	pub fn push_parallel(&mut self, component: Component)
 	{
 		use ComponentContent::*;
 		match self.content {
-			Poisoned => {
-				self.content = component.content;
-				self.impedance = component.impedance;
-			},
-			Parallel(ref mut components) => {
-				// This is a bit tricky, but it should make the computation faster because only
-				// 1 ratiofrac is created instead of 2
-				self.impedance.inv_inplace();
-				component.impedance.inv_inplace();
-				self.impedance += &component.impedance;
-				component.impedance.inv_inplace();
-				self.impedance.inv_inplace();
-				self.impedance.reduce();
-
-				components.push(component);
-			},
-			_ => {
-				// Same as above. Only 1 ratiofrac is created
-				self.impedance.inv_inplace();
-				component.impedance.inv_inplace();
-				let mut new_impedance = &self.impedance + &component.impedance;
-				component.impedance.inv_inplace();
-				self.impedance.inv_inplace();
-				new_impedance.inv_inplace();
-				new_impedance.reduce();
-
-				self.content = Parallel(vec![std::mem::take(self), component]);
-
-				self.impedance = new_impedance;
-			},
+			Poisoned => self.content = component.content,
+			Parallel(ref mut components) => components.push(component),
+			_ => self.content = Parallel(vec![std::mem::take(self), component]),
 		};
 	}
 
@@ -224,105 +165,153 @@ impl Component
 
 impl Component
 {
-	/// Function to be called once when tensions and currents are not yet set.
-	/// This function, given a certain frequency, will
-	/// infer the tensions and currents of each component and store it in the
-	/// associated nodes. This function only serves to initialize the circuit as
-	/// the next values can be inferred from the initial ones and the frequency.
+	/// Initializes the impedance of the component.
+	///
+	/// This method calculates and sets the impedance of the component based on
+	/// its content. If the component has already been initialized with a higher
+	/// state than `ComponentInitState::Impedance`, this method does nothing and
+	/// returns `Ok(())`.
+	///
+	/// # Errors
+	///
+	/// Returns an error of type `CircuitBuildError` if the component is in a
+	/// `Poisoned` state, case in which no initialisation is possible.
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use circuits_simulator::structs::{
+	/// 	component::Component,
+	/// 	dipole::Dipole::{Capacitor, Resistor},
+	/// };
+	///
+	/// let mut component1 = Component::from(Resistor(10.0));
+	/// let mut component2 = Component::from(Capacitor(0.1));
+	///
+	/// component1.push_serie(component2);
+	/// let result = component1.init_impedance();
+	///
+	/// assert!(result.is_ok());
+	/// ```
+	pub fn init_impedance(&mut self) -> Result<()>
+	{
+		if self.init_state > ComponentInitState::Impedance {
+			return Ok(());
+		}
+		use ComponentContent::*;
+		match &mut self.content {
+			Series(components) => {
+				let mut impedance = RatioFrac::default();
+				for component in components.iter_mut() {
+					component.init_impedance()?;
+					impedance += &component.impedance;
+				}
+				impedance.reduce();
+				self.impedance = impedance;
+			},
+			Parallel(components) => {
+				let mut impedance = RatioFrac::default();
+				for component in components.iter_mut() {
+					component.init_impedance()?;
+					// This is a bit tricky, but it should make the computation faster because
+					// only one additional ratiofrac is created, instead of 2 without inv_inplace
+					component.impedance.inv_inplace();
+					impedance += &component.impedance;
+					component.impedance.inv_inplace();
+				}
+				impedance.inv_inplace();
+				impedance.reduce();
+				self.impedance = impedance;
+			},
+			Simple(dipole) => self.impedance = dipole.impedance()?,
+			Poisoned => return Err(CircuitBuildError("Cannot initialize impedance of poisoned component".to_string())),
+		};
+		self.init_state = ComponentInitState::Impedance;
+		Ok(())
+	}
+
+	/// Initializes the current, tension, and potential for a component. Requires
+	/// the `nodes` HashMap to be initialized.
 	///
 	/// # Arguments
 	///
-	/// * `current` - The current of the component.
-	/// * `tension` - The tension of the component.
-	/// * `pulse` - The frequency of the component.
-	/// * `nodes` - The nodes of the component.
+	/// * `current` - The current value for the component.
+	/// * `tension` - The tension value for the component.
+	/// * `fore_potential` - The potential value for the component's fore node.
+	/// * `pulse` - The pulse value for the component.
+	/// * `nodes` - A mutable reference to the HashMap of nodes.
 	///
-	/// # Returns
+	/// # Errors
 	///
-	/// Returns a Result containing Ok(()) if the function is successful,
-	/// otherwise it returns an error.
-	pub fn init_current_tension(&mut self, current: Complex<f64>, tension: Complex<f64>, pulse: f64, nodes: &mut HashMap<Id, Node>) -> Result<()>
+	/// Returns an error if the component's initialization state is not
+	/// appropriate.
+	pub fn init_current_tension_potential(&mut self,
+	                                      current: Complex<f64>,
+	                                      tension: Complex<f64>,
+	                                      fore_potential: Complex<f64>,
+	                                      pulse: f64,
+	                                      nodes: &mut HashMap<Id, Node>)
+	                                      -> Result<()>
 	{
-		let node = nodes.get_mut(self.fore_node.as_slice()).unwrap();
+		if self.init_state > ComponentInitState::CurrentTensionPotential {
+			return Ok(());
+		} else if self.init_state < ComponentInitState::Impedance {
+			return Err(CircuitBuildError("Cannot initialize currents and tensions before the impedance".to_string()));
+		}
+
+		let node = nodes.get_mut(self.fore_node.as_slice()).expect("Node not found :/");
 		node.currents.push(current);
 		node.next_comp_tensions.push(tension);
+		node.potentials.push(fore_potential);
 
 		use ComponentContent::*;
 		match &mut self.content {
-			Series(components) =>
+			Series(components) => {
+				let mut remaining_potential = fore_potential;
 				for component in components.iter_mut() {
 					if !pulse.is_zero() || !is_multiple_of_invx(&component.impedance) {
-						let next_actual_impedance = component.impedance.eval(Complex::from(pulse));
-						component.init_current_tension(current, current * next_actual_impedance, pulse, nodes)?;
+						let next_tension = current * component.impedance.eval(Complex::from(pulse));
+						component.init_current_tension_potential(current, next_tension, remaining_potential, pulse, nodes)?;
+						remaining_potential -= next_tension;
 					} else if current.is_zero() {
 						/* We suppose a zero current is always due to a zero admittance
 						Otherwise, the emulation for this pulse would not have started or have
 						panicked */
-						// assert!(is_multiple_of_invx(&self.impedance));
-						let tension_factor = evaluate_zero_without_invx(&component.impedance) / evaluate_zero_without_invx(&self.impedance);
+						assert!(is_multiple_of_invx(&self.impedance));
 						// We factor by the "impedance ratio"
-						component.init_current_tension(current, tension * tension_factor, pulse, nodes)?;
+						let next_tension = tension * evaluate_zero_without_invx(&component.impedance) / evaluate_zero_without_invx(&self.impedance);
+						component.init_current_tension_potential(current, next_tension, remaining_potential, pulse, nodes)?;
+						remaining_potential -= next_tension;
 					} else {
 						return short_circuit_current(&component.fore_node, current, &component.impedance);
 					}
-				},
+				}
+			},
 			Parallel(components) =>
 				for component in components.iter_mut() {
 					if !pulse.is_zero() || !is_multiple_of_x(&component.impedance) {
 						// Better to do inv_inplace instead of calling .inv() on the impendance because
 						// NaN.inv() = NaN and not 0, which can lead to false short-circuit detection
 						component.impedance.inv_inplace();
-						let next_actual_admittance = component.impedance.eval(Complex::from(pulse));
+						let evaluated_admittance = component.impedance.eval(Complex::from(pulse));
 						component.impedance.inv_inplace();
 
-						component.init_current_tension(tension * next_actual_admittance, tension, pulse, nodes)?;
+						component.init_current_tension_potential(tension * evaluated_admittance, tension, fore_potential, pulse, nodes)?;
 					} else if tension.is_zero() {
 						/* We suppose a zero tension is always due to a zero impedance
 						Otherwise, the emulation for this pulse would not have started or have
 						panicked */
-						// assert!(is_multiple_of_x(&self.impedance));
+						assert!(is_multiple_of_x(&self.impedance));
 						let current_factor = evaluate_zero_without_x(&self.impedance) / evaluate_zero_without_x(&component.impedance);
 						// We factor by the "admittance ratio"
-						component.init_current_tension(current * current_factor, tension, pulse, nodes)?;
+						component.init_current_tension_potential(current * current_factor, tension, fore_potential, pulse, nodes)?;
 					} else {
 						return short_circuit_tension(&component.fore_node, tension, &component.impedance);
 					}
 				},
 			_ => (),
 		};
+		self.init_state = ComponentInitState::CurrentTensionPotential;
 		Ok(())
-	}
-
-	/// Function to be called once tensions and currents are set.
-	/// This function, given that the circuit is set at a certain frequency, will
-	/// infer the potentials on each node and store them in the `potentials`
-	/// field. Like with `init_current_tension`, this function only serves to
-	/// initialize the circuit as the next values can be inferred from the initial
-	/// ones and the frequency.
-	pub fn init_potentials(&mut self, fore_potential: Complex<f64>, nodes: &mut HashMap<Id, Node>)
-	{
-		nodes.get_mut(&self.fore_node).expect("Node not found :/").potentials.push(fore_potential);
-		use ComponentContent::*;
-		match &mut self.content {
-			Parallel(components) =>
-				for component in components {
-					component.init_potentials(fore_potential, nodes);
-				},
-			Series(components) => {
-				let mut remaining = fore_potential;
-				for component in components {
-					component.init_potentials(remaining, nodes);
-
-					remaining -= *nodes.get(&component.fore_node)
-					                   .expect("Node not found :/")
-					                   .next_comp_tensions
-					                   .last()
-					                   .expect("The component has no tension set but we need to infer the potential");
-					// The last tension is the one that
-					// corresponds to the pulse being emulated
-				}
-			},
-			_ => (),
-		}
 	}
 }
