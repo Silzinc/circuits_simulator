@@ -11,6 +11,17 @@ pub struct Source
 	pub voltages: Vec<(f64, Complex<f64>)>,
 }
 
+// Utility struct to enable binary search on f64
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
+struct NonNan(f64);
+
+impl Eq for NonNan {}
+impl Ord for NonNan
+{
+	#[inline]
+	fn cmp(&self, other: &Self) -> std::cmp::Ordering { self.partial_cmp(other).unwrap() }
+}
+
 impl Source
 {
 	/// Creates a new `Source` with an empty vector of voltages.
@@ -21,13 +32,16 @@ impl Source
 	#[inline]
 	pub fn set_voltage(&mut self, index: usize, voltage: Complex<f64>) { self.voltages[index].1 = voltage; }
 
-	/// Adds a new pulse to the `voltages` vector at the specified time.
-	/// The pulse is represented by a voltage value.
+	/// Adds a new pulse to the `voltages` vector at the specified time. If the
+	/// pulse is already present, its voltage is updated. The pulse is represented
+	/// by a voltage value.
 	#[inline]
 	pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>)
 	{
-		let index = self.voltages.iter().position(|(f, _)| *f > pulse).unwrap_or(self.voltages.len());
-		self.voltages.insert(index, (pulse, voltage));
+		match self.voltages.binary_search_by_key(&NonNan(pulse), |&(f, _)| NonNan(f)) {
+			Ok(index) => self.voltages[index].1 = voltage,
+			Err(index) => self.voltages.insert(index, (pulse, voltage)),
+		}
 	}
 
 	/// Removes the pulse at the specified index from the `voltages` vector.
