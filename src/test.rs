@@ -12,7 +12,7 @@ fn test_() -> crate::error::Result<()>
 	fn square_wave(x: f64) -> f64
 	{
 		if x < 2e-3 {
-			return 0.;
+			0.
 		} else if ((x + 2e-3) % 4e-3) > 2e-3 {
 			-1.
 		} else {
@@ -38,7 +38,6 @@ fn test_() -> crate::error::Result<()>
 	let start = Instant::now();
 	let result = c.emulate_many(duration, step, &vec![vec![0u8], vec![0u8, 1u8]])?;
 	let time_required = start.elapsed().as_secs_f64();
-	// println!("Duration: {}s", duration); // Doesn't work on in test mode
 	Command::new("echo").arg(format!("Time required to emulate the circuit: {}s", time_required))
 	                    .spawn()
 	                    .expect("Failed to print the duration");
