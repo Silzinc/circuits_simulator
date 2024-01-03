@@ -26,7 +26,7 @@ impl Dipole
 {
 	/// Calculates the impedance of a dipole.
 	#[inline]
-	pub(crate) fn impedance(&self) -> Result<RatioFrac<Complex<f64>>>
+	pub fn impedance(&self) -> Result<RatioFrac<Complex<f64>>>
 	{
 		match self {
 			Dipole::Resistor(r) => Ok(RatioFrac::from(Complex::from(*r))),

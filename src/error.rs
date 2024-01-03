@@ -1,4 +1,4 @@
-use crate::structs::node::Id;
+use crate::structs::Id;
 use fractios::RatioFrac;
 use std::{fmt::Debug, io::Error as IOError};
 

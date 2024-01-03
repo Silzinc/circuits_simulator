@@ -3,10 +3,9 @@ fn test_() -> crate::error::Result<()>
 	// Emulate a serial RC circuit with a square wave of period
 	// 4s that starts after 2s as input
 	use crate::structs::{
-		circuit::Circuit,
-		component::Component,
-		dipole::Dipole::{Capacitor, Resistor},
-		source::Source,
+		Circuit, Component,
+		Dipole::{Capacitor, Resistor},
+		Source,
 	};
 	use std::{env, fs::File, io::prelude::Write, process::Command, time::Instant};
 

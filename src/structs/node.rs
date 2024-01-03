@@ -9,7 +9,7 @@ use std::collections::HashMap;
 /// A node is a point in a circuit where two or more circuit components meet. It
 /// is represented by a vector of bytes that gives the path to find it in the
 /// node tree.
-pub(crate) type Id = Vec<u8>;
+pub type Id = Vec<u8>;
 
 /// A node in a circuit.
 #[derive(Clone, Debug)]

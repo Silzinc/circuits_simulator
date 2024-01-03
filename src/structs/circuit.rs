@@ -25,12 +25,6 @@ pub enum CircuitInitState
 	Source       = 2,
 }
 
-impl Default for CircuitInitState
-{
-	#[inline]
-	fn default() -> Self { Self::None }
-}
-
 #[derive(Clone, Debug)]
 /// Represents an electronic circuit.
 pub struct Circuit

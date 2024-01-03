@@ -1,11 +1,23 @@
-use super::{component::*, dipole::Dipole, node::*};
+use super::{circuit::*, component::*, dipole::Dipole, node::*};
 use fractios::RatioFrac;
 use std::default::Default;
+
+impl Default for CircuitInitState
+{
+	#[inline]
+	fn default() -> Self { Self::None }
+}
 
 impl Default for Dipole
 {
 	#[inline]
 	fn default() -> Self { Dipole::Poisoned }
+}
+
+impl Default for ComponentInitState
+{
+	#[inline]
+	fn default() -> Self { ComponentInitState::None }
 }
 
 impl Default for ComponentContent

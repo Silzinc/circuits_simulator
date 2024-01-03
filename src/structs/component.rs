@@ -24,12 +24,6 @@ pub enum ComponentInitState
 	CurrentTensionPotential = 2,
 }
 
-impl Default for ComponentInitState
-{
-	#[inline]
-	fn default() -> Self { ComponentInitState::None }
-}
-
 /// Represents the content of a circuit component, which can be either a
 /// parallel or series combination of other components, a simple dipole, or a
 /// poisoned state used as a default.
@@ -48,12 +42,12 @@ pub enum ComponentContent
 pub struct Component
 {
 	/// The content of the component.
-	pub content:           ComponentContent,
+	pub content:    ComponentContent,
 	/// The impedance of the component.
-	pub impedance:         RatioFrac<Complex<f64>>,
+	pub impedance:  RatioFrac<Complex<f64>>,
 	/// The ID of the node connected to the component's fore port.
-	pub fore_node:         Id,
-	pub(super) init_state: ComponentInitState,
+	pub fore_node:  Id,
+	pub init_state: ComponentInitState,
 }
 
 impl Component
