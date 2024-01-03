@@ -50,7 +50,7 @@ pub fn fouriers<F, I>(g: F, fundamental: f64, n_freqs_: I) -> Vec<Complex<f64>>
 	let invn = (n as f64).recip();
 	let halft = 0.5f64 / delta_f;
 
-	let mut vals = (0..n).map(|i| Complex { re: g(t * i as f64 - halft),
+	let mut vals = (0..n).map(|i| Complex { re: g(t * (i as f64 + 0.5) - halft),
 	                                        im: 0f64, })
 	                     .collect::<Vec<_>>();
 
