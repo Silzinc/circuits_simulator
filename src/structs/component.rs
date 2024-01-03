@@ -1,7 +1,4 @@
-use super::{
-	dipole::Dipole,
-	node::{Id, Node},
-};
+use super::{Dipole, Id, Node};
 use crate::{
 	error::{short_circuit_current, short_circuit_tension, Error::CircuitBuildError, Result},
 	util::{evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x},

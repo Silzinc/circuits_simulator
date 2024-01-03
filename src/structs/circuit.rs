@@ -1,8 +1,4 @@
-use super::{
-	component::Component,
-	node::{Id, Node},
-	source::Source,
-};
+use super::{Component, Id, Node, Source};
 use crate::{
 	error::{short_circuit_current, Result},
 	util::is_multiple_of_x,

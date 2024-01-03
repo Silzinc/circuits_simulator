@@ -1,7 +1,4 @@
-use super::{
-	circuit::{Circuit, CircuitInitState},
-	component::{Component, ComponentContent},
-};
+use super::{Circuit, CircuitInitState, Component, ComponentContent};
 use num::Complex;
 use std::collections::HashMap;
 
