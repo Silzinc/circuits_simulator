@@ -78,9 +78,9 @@ impl Circuit
 	///
 	/// A `Result` containing a vector of tuples, where each tuple contains three
 	/// vectors:
-	/// - The first vector contains the time values of the simulation.
+	/// - The first vector contains the current values of the node.
 	/// - The second vector contains the voltage values of the node.
-	/// - The third vector contains the current values of the node.
+	/// - The third vector contains the potential values of the node.
 	///
 	/// # Errors
 	///
