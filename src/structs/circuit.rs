@@ -57,10 +57,7 @@ impl Circuit
 		       content:    Component::default(),
 		       nodes:      HashMap::new(), }
 	}
-}
 
-impl Circuit
-{
 	/// Initializes the circuit by setting up the nodes and calculating the
 	/// initial current and tension for each voltage source. Assumes that the
 	/// circuit tree is already constructed.
