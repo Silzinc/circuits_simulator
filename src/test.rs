@@ -1,7 +1,7 @@
 fn test_() -> crate::error::Result<()>
 {
-	// Emulate a serial RC circuit with a square wave of period
-	// 4s that starts after 2s as input
+	// Emulate a serial RLC circuit with a square wave of period
+	// 4 ms that starts after 2 ms as input
 	use crate::structs::{
 		Circuit, Component,
 		Dipole::{Capacitor, Inductor, Resistor},
@@ -24,10 +24,10 @@ fn test_() -> crate::error::Result<()>
 	let duration = 10e-3;
 	let step = duration / n_freqs as f64;
 
-	// Create the serial RC circuit
+	// Create the serial RLC circuit
 	let mut c = Circuit::new();
 	c.source = Source::from_fn(square_wave, duration, n_freqs);
-	c.content.push_serie(Component::from(Resistor(200.))); // 0.5 kΩ, at position [0, 0]
+	c.content.push_serie(Component::from(Resistor(200.))); // 0.2 kΩ, at position [0, 0]
 	c.content.push_serie(Component::from(Capacitor(10e-9))); // 10 nF at position [0, 1]
 	c.content.push_serie(Component::from(Inductor(100e-3))); // 100 mH at position [0, 2]
 
