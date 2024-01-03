@@ -247,7 +247,8 @@ impl Component
 	/// # Errors
 	///
 	/// Returns an error if the component's initialization state is not
-	/// appropriate.
+	/// appropriate or if there is a short circuit in the circuit. For more
+	/// details on short circuits, see `[Circuit::init]`.
 	pub fn init_current_tension_potential(&mut self,
 	                                      current: Complex<f64>,
 	                                      tension: Complex<f64>,

@@ -54,7 +54,13 @@ impl Circuit
 	///
 	/// # Errors
 	///
-	/// Returns an error if there is a short circuit in the circuit.
+	/// Returns an error if there is a short circuit in the circuit. A short
+	/// circuit happens when either the tension or the current is infinite in the
+	/// circuit. This happens if a capacitor is connected to a constant current
+	/// source or if an inductor is connected to a constant tension source. Note
+	/// that a capacitor receiving a constant tension is not considered as a short
+	/// circuit here : the current will simply be zero. Same for the tension if an
+	/// inductor receives a constant current.
 	///
 	/// # Returns
 	///
