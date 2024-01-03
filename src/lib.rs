@@ -9,8 +9,8 @@
 //! components.
 
 mod emulation;
-pub mod error;
-pub mod fourier;
+mod error;
+mod fourier;
 pub mod structs;
 mod util;
 
