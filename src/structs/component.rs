@@ -97,8 +97,8 @@ impl Component
 	///
 	/// ```
 	/// use circuits_simulator::structs::{
-	/// 	component::Component,
-	/// 	dipole::Dipole::{Capacitor, Resistor},
+	/// 	Component,
+	/// 	Dipole::{Capacitor, Resistor},
 	/// };
 	///
 	/// let mut component1 = Component::from(Resistor(10.0));
@@ -133,8 +133,8 @@ impl Component
 	///
 	/// ```
 	/// use circuits_simulator::structs::{
-	/// 	component::Component,
-	/// 	dipole::Dipole::{Capacitor, Resistor},
+	/// 	Component,
+	/// 	Dipole::{Capacitor, Resistor},
 	/// };
 	///
 	/// let mut component1 = Component::try_from(Resistor(10.0)).unwrap();
@@ -184,8 +184,8 @@ impl Component
 	///
 	/// ```
 	/// use circuits_simulator::structs::{
-	/// 	component::Component,
-	/// 	dipole::Dipole::{Capacitor, Resistor},
+	/// 	Component,
+	/// 	Dipole::{Capacitor, Resistor},
 	/// };
 	///
 	/// let mut component1 = Component::from(Resistor(10.0));
