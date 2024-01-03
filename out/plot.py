@@ -19,7 +19,7 @@ t = np.linspace(0, duration, len(tensions1))
 
 # Plot
 fig = plt.figure()
-fig.suptitle("Tensions over time in a RC circuit")
+fig.suptitle("Tensions over time in a RLC circuit")
 ax1, ax2 = fig.subplots(2, 1)
 
 ax1.plot(t, tensions1)
