@@ -2,7 +2,7 @@ fn test_() -> crate::error::Result<()>
 {
 	// Emulate a serial RLC circuit with a square wave of period
 	// 4 ms that starts after 2 ms as input
-	use crate::structs::{
+	use crate::{
 		Circuit, Component,
 		Dipole::{Capacitor, Inductor, Resistor},
 		Source,

@@ -1,6 +1,6 @@
 use crate::{
 	error::{short_circuit_current, Result},
-	structs::{Circuit, Id},
+	Circuit, Id,
 };
 use num::Complex;
 use num_traits::Zero;

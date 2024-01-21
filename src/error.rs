@@ -1,6 +1,9 @@
-use crate::structs::Id;
+use crate::Id;
 use fractios::RatioFrac;
-use std::{fmt::Debug, io::Error as IOError};
+use std::{
+	fmt::{Debug, Display},
+	io::Error as IOError,
+};
 
 /// Represents an error that can occur during circuit building or solving.
 #[derive(Debug)]
@@ -16,7 +19,7 @@ pub enum Error
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-impl std::fmt::Display for Error
+impl Display for Error
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result
 	{
