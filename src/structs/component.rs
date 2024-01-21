@@ -1,6 +1,6 @@
 use super::{Dipole, Id, Node};
 use crate::{
-	error::{short_circuit_current, short_circuit_tension, Error::CircuitBuildError, Result},
+	error::{short_circuit_current, short_circuit_tension, Error::CircuitBuild, Result},
 	util::{evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x},
 };
 use fractios::RatioFrac;
@@ -9,10 +9,11 @@ use num_traits::Zero;
 use std::collections::HashMap;
 
 /// Represents the initialisation state of a component.
-#[derive(Clone, Debug, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum ComponentInitState
 {
 	/// No initialisation
+	#[default]
 	None      = 0,
 	/// The impedances have been computed
 	Impedance = 1,
@@ -24,18 +25,19 @@ pub enum ComponentInitState
 /// Represents the content of a circuit component, which can be either a
 /// parallel or series combination of other components, a simple dipole, or a
 /// poisoned state used as a default.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub enum ComponentContent
 {
 	Parallel(Vec<Component>),
 	Series(Vec<Component>),
 	Simple(Dipole),
 	/// Used as a default state
+	#[default]
 	Poisoned,
 }
 
 /// A struct representing a circuit component.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Component
 {
 	/// The content of the component.
@@ -160,7 +162,7 @@ impl Component
 		use ComponentContent::*;
 		match &mut self.content {
 			Series(components) | Parallel(components) => components.swap(index1, index2),
-			_ => return Err(CircuitBuildError("Cannot swap components in a non-branch component".to_string())),
+			_ => return Err(CircuitBuild("Cannot swap components in a non-branch component".to_string())),
 		}
 		Ok(())
 	}
@@ -177,7 +179,7 @@ impl Component
 	///
 	/// # Errors
 	///
-	/// Returns an error of type `CircuitBuildError` if the component is in a
+	/// Returns an error of type `CircuitBuild` if the component is in a
 	/// `Poisoned` state, case in which no initialisation is possible.
 	///
 	/// # Examples
@@ -227,7 +229,7 @@ impl Component
 				self.impedance = impedance;
 			},
 			Simple(dipole) => self.impedance = dipole.impedance()?,
-			Poisoned => return Err(CircuitBuildError("Cannot initialize impedance of poisoned component".to_string())),
+			Poisoned => return Err(CircuitBuild("Cannot initialize impedance of poisoned component".to_string())),
 		};
 		self.init_state = ComponentInitState::Impedance;
 		Ok(())
@@ -260,7 +262,7 @@ impl Component
 		if self.init_state > ComponentInitState::CurrentTensionPotential {
 			return Ok(());
 		} else if self.init_state < ComponentInitState::Impedance {
-			return Err(CircuitBuildError("Cannot initialize currents and tensions before the impedance".to_string()));
+			return Err(CircuitBuild("Cannot initialize currents and tensions before the impedance".to_string()));
 		}
 
 		let node = nodes.get_mut(self.fore_node.as_slice()).expect("Node not found :/");

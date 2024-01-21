@@ -8,10 +8,11 @@ use num_traits::Zero;
 use std::collections::HashMap;
 
 /// The initialisation state of a circuit.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Copy)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Default)]
 pub enum CircuitInitState
 {
 	/// The circuit is not initialised.
+	#[default]
 	None         = 0,
 	/// The nodes of the circuit are initialised, though they have no current or
 	/// tension set. The circuit is built and the impedances are calculated.
@@ -21,7 +22,7 @@ pub enum CircuitInitState
 	Source       = 2,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 /// Represents an electronic circuit.
 pub struct Circuit
 {
@@ -79,7 +80,7 @@ impl Circuit
 			if pulse.is_zero() && is_multiple_of_x(&self.content.impedance) {
 				return short_circuit_current(&vec![0u8], voltage, &self.content.impedance);
 			}
-			let initial_tension = Complex::from(*voltage);
+			let initial_tension = *voltage;
 			self.content.impedance.inv_inplace();
 			let initial_current = initial_tension * self.content.impedance.eval(Complex::from(*pulse));
 			self.content.impedance.inv_inplace();

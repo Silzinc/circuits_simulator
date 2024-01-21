@@ -14,21 +14,21 @@
 //! // Emulate a serial RLC circuit with a square wave of period
 //! // 4 ms that starts after 2 ms as input
 //! use circuits_simulator::structs::{
-//! 	Circuit, Component,
-//! 	Dipole::{Capacitor, Inductor, Resistor},
-//! 	Source,
+//!     Circuit, Component,
+//!     Dipole::{Capacitor, Inductor, Resistor},
+//!     Source,
 //! };
 //! use std::time::Instant;
 //!
 //! fn square_wave(x: f64) -> f64
 //! {
-//! 	if x < 2e-3 {
-//! 		0.
-//! 	} else if ((x + 2e-3) % 4e-3) > 2e-3 {
-//! 		-1.
-//! 	} else {
-//! 		1.
-//! 	}
+//!     if x < 2e-3 {
+//!         0.
+//!     } else if ((x + 2e-3) % 4e-3) > 2e-3 {
+//!         -1.
+//!     } else {
+//!         1.
+//!     }
 //! }
 //!
 //! let n_freqs = 1000;
@@ -58,8 +58,10 @@
 mod emulation;
 mod error;
 mod fourier;
-pub mod structs;
+mod structs;
 mod util;
+
+pub use structs::*;
 
 #[cfg(test)]
 mod test;

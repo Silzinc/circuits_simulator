@@ -36,7 +36,7 @@ pub fn fouriers<F, I>(g: F, fundamental: f64, n_freqs_: I) -> Vec<Complex<f64>>
 	assert!(n_freqs > 0);
 
 	if fundamental.is_sign_negative() {
-		let mut result = fouriers(g, -fundamental, n_freqs_.clone());
+		let mut result = fouriers(g, -fundamental, n_freqs_);
 		for c in result.iter_mut() {
 			c.im = -c.im;
 		}
@@ -63,14 +63,14 @@ pub fn fouriers<F, I>(g: F, fundamental: f64, n_freqs_: I) -> Vec<Complex<f64>>
 	fft.process(&mut vals);
 
 	let mut change_sign = false;
-	for i in 0..=n_freqs {
-		vals[i] = vals[i] * invn;
+	for val in vals.iter_mut().take(n_freqs + 1) {
+		*val *= invn;
 		if change_sign {
-			vals[i] = -vals[i];
+			*val = -*val;
 		}
 		change_sign = !change_sign;
 	}
 	vals.truncate(n_freqs + 1); // We only keep the half of the spectrum that
 														// follows the Shannon-Nyquist criterion
-	return vals;
+	vals
 }

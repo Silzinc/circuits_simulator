@@ -5,6 +5,12 @@ use crate::{
 use num::Complex;
 use num_traits::Zero;
 
+/// Return type of the emulation functions.
+/// - The first vector contains the current values of the node.
+/// - The second vector contains the voltage values of the node.
+/// - The third vector contains the potential values of the node.
+type EmulationData = (Vec<f64>, Vec<f64>, Vec<f64>);
+
 impl Circuit
 {
 	/// This function is used to emulate a circuit and returns the currents and
@@ -24,11 +30,13 @@ impl Circuit
 	/// # Errors
 	///
 	/// Returns an error if the initialization of the circuit fails
-	pub fn emulate_one(&mut self, duration: f64, step: f64, node_id: &Id) -> Result<(Vec<f64>, Vec<f64>, Vec<f64>)>
+	pub fn emulate_one(&mut self, duration: f64, step: f64, node_id: &Id) -> Result<EmulationData>
 	{
 		self.init()?;
 
-		let node = self.nodes.get_mut(node_id).expect("Node of id {node_id:?} not found :/");
+		let node = self.nodes
+		               .get_mut(node_id)
+		               .unwrap_or_else(|| panic!("Node of id {node_id:?} not found :/"));
 		let initial_currents = &node.currents;
 		let initial_tensions = &node.next_comp_tensions;
 		let initial_potentials = &node.potentials;
@@ -77,17 +85,15 @@ impl Circuit
 	/// # Returns
 	///
 	/// A `Result` containing a vector of tuples, where each tuple contains three
-	/// vectors:
-	/// - The first vector contains the current values of the node.
-	/// - The second vector contains the voltage values of the node.
-	/// - The third vector contains the potential values of the node.
+	/// vectors: the vectors of currents, tensions, and potentials of
+	/// the node.
 	///
 	/// # Errors
 	///
 	/// Returns an error if the initialization of the circuit fails or if the
 	/// emulation of a node fails.
 	#[inline]
-	pub fn emulate_many(&mut self, duration: f64, step: f64, node_ids: &Vec<Id>) -> Result<Vec<(Vec<f64>, Vec<f64>, Vec<f64>)>>
+	pub fn emulate_many(&mut self, duration: f64, step: f64, node_ids: &Vec<Id>) -> Result<Vec<EmulationData>>
 	{
 		self.init()?;
 		let mut results = Vec::with_capacity(node_ids.len());

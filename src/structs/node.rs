@@ -9,7 +9,7 @@ use std::collections::HashMap;
 pub type Id = Vec<u8>;
 
 /// A node in a circuit.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Node
 {
 	/// The ID of the node.
@@ -44,7 +44,7 @@ impl Component
 	/// `Id`.
 	fn get_comp_by_slice(&self, id: &[u8]) -> Option<&Component>
 	{
-		if id.len() == 0 {
+		if id.is_empty() {
 			panic!("The id is empty")
 		} else {
 			match &self.content {
@@ -69,7 +69,7 @@ impl Component
 	/// an `Id`.
 	fn get_comp_by_slice_mut(&mut self, id: &[u8]) -> Option<&mut Component>
 	{
-		if id.len() == 0 {
+		if id.is_empty() {
 			panic!("The id is empty")
 		} else {
 			match &mut self.content {

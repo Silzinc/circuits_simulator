@@ -1,6 +1,5 @@
 mod circuit;
 mod component;
-mod default;
 mod dipole;
 mod node;
 mod source;

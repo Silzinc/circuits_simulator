@@ -1,10 +1,10 @@
-use crate::error::{Error::CircuitBuildError, Result};
+use crate::error::{Error::CircuitBuild, Result};
 use fractios::RatioFrac;
 use num::Complex;
 use num_traits::Zero;
 use polyx::{polynomial, Polynomial};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 /// Represents a dipole, which is an electrical component with two terminals.
 /// It can be a resistor, capacitor, inductor, or an equivalent component.
 pub enum Dipole
@@ -19,6 +19,7 @@ pub enum Dipole
 	/// complex coefficients.
 	Equivalent(RatioFrac<Complex<f64>>),
 	/// A poisoned state, used as a default state.
+	#[default]
 	Poisoned,
 }
 
@@ -34,7 +35,7 @@ impl Dipole
 				Ok(RatioFrac::from((polynomial![Complex { re: 0f64, im: -(*c).recip() }], polynomial![Complex::zero(), Complex::from(1f64)]))),
 			Dipole::Inductor(l) => Ok(RatioFrac::from(polynomial![Complex::zero(), Complex { re: 0f64, im: *l }])),
 			Dipole::Equivalent(e) => Ok(e.clone()),
-			Dipole::Poisoned => Err(CircuitBuildError("Called impedance on poisoned dipole".to_string())),
+			Dipole::Poisoned => Err(CircuitBuild("Called impedance on poisoned dipole".to_string())),
 		}
 	}
 }

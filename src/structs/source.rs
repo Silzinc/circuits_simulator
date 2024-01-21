@@ -3,7 +3,7 @@ use num::Complex;
 use num_traits::PrimInt;
 use std::fmt::Debug;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 /// A source of voltage.
 pub struct Source
 {
@@ -16,6 +16,7 @@ pub struct Source
 struct NonNan(f64);
 
 impl Eq for NonNan {}
+#[allow(clippy::derive_ord_xor_partial_ord)]
 impl Ord for NonNan
 {
 	#[inline]
@@ -80,7 +81,7 @@ impl Source
 	{
 		self.clear();
 		let fundamental = (duration + duration).recip(); // Shannon's theorem
-		let n_freqs = n_freqs_.to_usize().expect(&format!("Failed to convert {n_freqs_:?} to usize"));
+		let n_freqs = n_freqs_.to_usize().unwrap_or_else(|| panic!("Failed to convert {n_freqs_:?} to usize"));
 		let fourier_coefs = fouriers(f, fundamental, n_freqs - 1);
 		let twopif = fundamental * 2. * std::f64::consts::PI;
 
