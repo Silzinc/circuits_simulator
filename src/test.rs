@@ -28,9 +28,10 @@ fn test_() -> crate::error::Result<()>
 	// Create the serial RLC circuit
 	let mut c = Circuit::new();
 	c.source = Source::from_fn(square_wave, duration, n_freqs);
-	c.content.push_serie(Component::from(Resistor(200.))); // 0.2 kΩ, at position [0, 0]
-	c.content.push_serie(Component::from(Capacitor(10e-9))); // 10 nF at position [0, 1]
-	c.content.push_serie(Component::from(Inductor(100e-3))); // 100 mH at position [0, 2]
+	c.content
+		.push_serie(Component::from(Resistor(200.))) // 0.2 kΩ, at position [0, 0]
+		.push_serie(Component::from(Capacitor(10e-9))) // 10 nF at position [0, 1]
+		.push_serie(Component::from(Inductor(100e-3))); // 100 mH at position [0, 2]
 
 	// With this, the attenuation time is 500 µs
 	// and the pseudo-period is close to 200 µs

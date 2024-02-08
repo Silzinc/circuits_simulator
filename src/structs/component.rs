@@ -111,7 +111,7 @@ impl Component
 	/// component1.push_serie(component2);
 	/// ```
 	#[inline]
-	pub fn push_serie(&mut self, component: Component)
+	pub fn push_serie(&mut self, component: Component) -> &mut Self
 	{
 		use ComponentContent::*;
 		match self.content {
@@ -119,6 +119,7 @@ impl Component
 			Series(ref mut components) => components.push(component),
 			_ => self.content = Series(vec![std::mem::take(self), component]),
 		};
+		self
 	}
 
 	/// Pushes a component onto self in parallel.
@@ -147,7 +148,7 @@ impl Component
 	/// component1.push_parallel(component2);
 	/// ```
 	#[inline]
-	pub fn push_parallel(&mut self, component: Component)
+	pub fn push_parallel(&mut self, component: Component) -> &mut Self
 	{
 		use ComponentContent::*;
 		match self.content {
@@ -155,18 +156,19 @@ impl Component
 			Parallel(ref mut components) => components.push(component),
 			_ => self.content = Parallel(vec![std::mem::take(self), component]),
 		};
+		self
 	}
 
 	// Swaps two components in a branch
 	#[inline]
-	pub fn swap(&mut self, index1: usize, index2: usize) -> Result<()>
+	pub fn swap(&mut self, index1: usize, index2: usize) -> Result<&mut Self>
 	{
 		use ComponentContent::*;
 		match &mut self.content {
 			Series(components) | Parallel(components) => components.swap(index1, index2),
 			_ => return Err(CircuitBuild("Cannot swap components in a non-branch component".to_string())),
 		}
-		Ok(())
+		Ok(self)
 	}
 }
 
@@ -200,10 +202,10 @@ impl Component
 	///
 	/// assert!(result.is_ok());
 	/// ```
-	pub fn init_impedance(&mut self) -> Result<()>
+	pub fn init_impedance(&mut self) -> Result<&mut Self>
 	{
 		if self.init_state > ComponentInitState::Impedance {
-			return Ok(());
+			return Ok(self);
 		}
 		use ComponentContent::*;
 		match &mut self.content {
@@ -234,7 +236,7 @@ impl Component
 			Poisoned => return Err(CircuitBuild("Cannot initialize impedance of poisoned component".to_string())),
 		};
 		self.init_state = ComponentInitState::Impedance;
-		Ok(())
+		Ok(self)
 	}
 
 	/// Initializes the current, tension, and potential for a component. Requires
@@ -260,10 +262,10 @@ impl Component
 		fore_potential: Complex<f64>,
 		pulse: f64,
 		nodes: &mut HashMap<Id, Node>,
-	) -> Result<()>
+	) -> Result<&mut Self>
 	{
 		if self.init_state > ComponentInitState::CurrentTensionPotential {
-			return Ok(());
+			return Ok(self);
 		} else if self.init_state < ComponentInitState::Impedance {
 			return Err(CircuitBuild(
 				"Cannot initialize currents and tensions before the impedance".to_string(),
@@ -323,12 +325,20 @@ impl Component
 			_ => (),
 		};
 		self.init_state = ComponentInitState::CurrentTensionPotential;
-		Ok(())
+		Ok(self)
 	}
 
 	#[inline]
-	pub fn uninit_current_tension_potential(&mut self) { self.init_state = self.init_state.min(ComponentInitState::Impedance) }
+	pub fn uninit_current_tension_potential(&mut self) -> &mut Self
+	{
+		self.init_state = self.init_state.min(ComponentInitState::Impedance);
+		self
+	}
 
 	#[inline]
-	pub fn uninit_all(&mut self) { self.init_state = ComponentInitState::None }
+	pub fn uninit_all(&mut self) -> &mut Self
+	{
+		self.init_state = ComponentInitState::None;
+		self
+	}
 }

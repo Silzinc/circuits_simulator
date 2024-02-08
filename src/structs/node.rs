@@ -104,7 +104,7 @@ impl Component
 	/// An `Option` containing a reference to a `Component` if it exists,
 	/// otherwise `None`.
 	#[inline]
-	pub fn get_comp_by_id(&mut self, id: Id) -> Option<&Component> { self.get_comp_by_slice(id.as_slice()) }
+	pub fn get_comp_by_id(&self, id: Id) -> Option<&Component> { self.get_comp_by_slice(id.as_slice()) }
 
 	/// Returns an `Option` containing a mutable reference to a `Component` based
 	/// on its ID.
@@ -125,7 +125,7 @@ impl Component
 	/// # Arguments
 	///
 	/// * `id` - An `Id` representing the ID of the `Component`.
-	fn set_id(&mut self, id: &Id)
+	fn set_id(&mut self, id: &Id) -> &mut Self
 	{
 		use ComponentContent::*;
 		self.fore_node = id.clone();
@@ -141,7 +141,8 @@ impl Component
 				}
 			},
 			_ => (),
-		}
+		};
+		self
 	}
 
 	/// Sets up the nodes of the `Component` and its children. In particular, the
@@ -152,7 +153,7 @@ impl Component
 	///
 	/// * `nodes` - A mutable reference to a `HashMap` containing the nodes of the
 	///   circuit.
-	fn init_nodes(&self, nodes: &mut HashMap<Id, Node>)
+	fn init_nodes(&self, nodes: &mut HashMap<Id, Node>) -> &Self
 	{
 		use ComponentContent::*;
 		let id = &self.fore_node;
@@ -166,6 +167,7 @@ impl Component
 				},
 			_ => (),
 		}
+		self
 	}
 }
 
@@ -174,13 +176,13 @@ impl Circuit
 {
 	/// Sets up the nodes IDs of the `Circuit` and its components.
 	#[inline]
-	pub fn init_nodes(&mut self)
+	pub fn init_nodes(&mut self) -> &mut Self
 	{
 		if self.init_state > CircuitInitState::CircuitNodes {
-			return;
+			return self;
 		}
-		self.content.set_id(&vec![0u8]);
-		self.content.init_nodes(&mut self.nodes);
+		self.content.set_id(&vec![0u8]).init_nodes(&mut self.nodes);
 		self.init_state = CircuitInitState::CircuitNodes;
+		self
 	}
 }

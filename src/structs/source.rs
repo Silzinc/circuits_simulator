@@ -31,27 +31,40 @@ impl Source
 
 	/// Sets the voltage at a specific index in the `voltages` vector.
 	#[inline]
-	pub fn set_voltage(&mut self, index: usize, voltage: Complex<f64>) { self.voltages[index].1 = voltage; }
+	pub fn set_voltage(&mut self, index: usize, voltage: Complex<f64>) -> &mut Self
+	{
+		self.voltages[index].1 = voltage;
+		self
+	}
 
 	/// Adds a new pulse to the `voltages` vector at the specified time. If the
 	/// pulse is already present, its voltage is updated. The pulse is represented
 	/// by a voltage value.
 	#[inline]
-	pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>)
+	pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>) -> &mut Self
 	{
 		match self.voltages.binary_search_by_key(&NonNan(pulse), |&(f, _)| NonNan(f)) {
 			Ok(index) => self.voltages[index].1 = voltage,
 			Err(index) => self.voltages.insert(index, (pulse, voltage)),
-		}
+		};
+		self
 	}
 
 	/// Removes the pulse at the specified index from the `voltages` vector.
 	#[inline]
-	pub fn remove_pulse(&mut self, index: usize) { self.voltages.remove(index); }
+	pub fn remove_pulse(&mut self, index: usize) -> &mut Self
+	{
+		self.voltages.remove(index);
+		self
+	}
 
 	/// Clears the `voltages` vector.
 	#[inline]
-	pub fn clear(&mut self) { self.voltages.clear(); }
+	pub fn clear(&mut self) -> &mut Self
+	{
+		self.voltages.clear();
+		self
+	}
 
 	/// Creates a new `Source` from a real valued function that generates voltage
 	/// values using its Fourier transform. The function takes a time value as
@@ -76,7 +89,7 @@ impl Source
 	/// specifies the total duration of the voltage source (henceforth the
 	/// duration of the simulation). The `n_freqs_` parameter specifies the number
 	/// of frequencies to use in the Fourier series.
-	pub fn set_fn<I, F>(&mut self, f: F, duration: f64, n_freqs_: I)
+	pub fn set_fn<I, F>(&mut self, f: F, duration: f64, n_freqs_: I) -> &mut Self
 	where
 		F: Fn(f64) -> f64,
 		I: PrimInt + Debug,
@@ -92,5 +105,6 @@ impl Source
 			self.add_pulse(pulse, coef);
 			pulse += twopif;
 		}
+		self
 	}
 }

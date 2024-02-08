@@ -68,10 +68,10 @@ impl Circuit
 	/// # Returns
 	///
 	/// Returns `Ok(())` if the circuit was successfully initialized.
-	pub fn init(&mut self) -> Result<()>
+	pub fn init(&mut self) -> Result<&mut Self>
 	{
 		if self.init_state == CircuitInitState::Source {
-			return Ok(());
+			return Ok(self);
 		}
 		self.init_nodes();
 		self.content.init_impedance()?;
@@ -91,21 +91,22 @@ impl Circuit
 				.init_current_tension_potential(initial_current, initial_tension, initial_tension, *pulse, &mut self.nodes)?;
 		}
 		self.init_state = CircuitInitState::Source;
-		Ok(())
+		Ok(self)
 	}
 
 	// To be called when the circuit is changed
 	#[inline]
-	pub fn uninit_all(&mut self)
+	pub fn uninit_all(&mut self) -> &mut Self
 	{
 		self.init_state = CircuitInitState::None;
 		self.nodes.clear();
 		self.content.uninit_all();
+		self
 	}
 
 	// To be called when the source is changed
 	#[inline]
-	pub fn uninit_source(&mut self)
+	pub fn uninit_source(&mut self) -> &mut Self
 	{
 		self.init_state = self.init_state.min(CircuitInitState::CircuitNodes);
 		for node in self.nodes.values_mut() {
@@ -114,5 +115,6 @@ impl Circuit
 			node.potentials.clear();
 		}
 		self.content.uninit_current_tension_potential();
+		self
 	}
 }
