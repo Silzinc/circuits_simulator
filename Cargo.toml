@@ -10,6 +10,9 @@ fractios = {version = "0.1.0", git = "https://github.com/Silzinc/fractios"}
 polyx = {version = "0.1.0", git = "https://github.com/Silzinc/polyx"}
 rustfft = "6.1.0"
 
+[dev-dependencies]
+plotters = "0.3.3"
+
 [profile.release]
 lto = true
 strip = true
