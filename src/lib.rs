@@ -13,7 +13,7 @@
 //! ```
 //! // Emulate a serial RLC circuit with a square wave of period
 //! // 4 ms that starts after 2 ms as input
-//! use circuits_simulator::structs::{
+//! use circuits_simulator::{
 //!     Circuit, Component,
 //!     Dipole::{Capacitor, Inductor, Resistor},
 //!     Source,

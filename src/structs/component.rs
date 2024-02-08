@@ -98,7 +98,7 @@ impl Component
 	/// # Example
 	///
 	/// ```
-	/// use circuits_simulator::structs::{
+	/// use circuits_simulator::{
 	/// 	Component,
 	/// 	Dipole::{Capacitor, Resistor},
 	/// };
@@ -134,7 +134,7 @@ impl Component
 	/// # Example
 	///
 	/// ```
-	/// use circuits_simulator::structs::{
+	/// use circuits_simulator::{
 	/// 	Component,
 	/// 	Dipole::{Capacitor, Resistor},
 	/// };
@@ -185,7 +185,7 @@ impl Component
 	/// # Examples
 	///
 	/// ```
-	/// use circuits_simulator::structs::{
+	/// use circuits_simulator::{
 	/// 	Component,
 	/// 	Dipole::{Capacitor, Resistor},
 	/// };
