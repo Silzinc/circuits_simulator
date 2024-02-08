@@ -29,13 +29,15 @@ pub(crate) fn is_multiple_of_invx<T: Zero + Clone>(r: &RatioFrac<T>) -> bool { r
 
 #[inline]
 pub(crate) fn evaluate_zero_without_x<T>(r: &RatioFrac<T>) -> T
-	where T: Zero + Clone + std::ops::Div<Output = T>
+where
+	T: Zero + Clone + std::ops::Div<Output = T>,
 {
 	r.numerator[1].clone() / r.denominator[0].clone()
 }
 #[inline]
 pub(crate) fn evaluate_zero_without_invx<T>(r: &RatioFrac<T>) -> T
-	where T: Zero + Clone + std::ops::Div<Output = T>
+where
+	T: Zero + Clone + std::ops::Div<Output = T>,
 {
 	r.numerator[0].clone() / r.denominator[1].clone()
 }

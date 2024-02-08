@@ -43,10 +43,12 @@ impl Circuit
 	#[inline]
 	pub fn new() -> Self
 	{
-		Self { init_state: CircuitInitState::default(),
-		       source:     Source::new(),
-		       content:    Component::default(),
-		       nodes:      HashMap::new(), }
+		Self {
+			init_state: CircuitInitState::default(),
+			source:     Source::new(),
+			content:    Component::default(),
+			nodes:      HashMap::new(),
+		}
 	}
 
 	/// Initializes the circuit by setting up the nodes and calculating the
@@ -84,8 +86,9 @@ impl Circuit
 			self.content.impedance.inv_inplace();
 			let initial_current = initial_tension * self.content.impedance.eval(Complex::from(*pulse));
 			self.content.impedance.inv_inplace();
-			self.content
-			    .init_current_tension_potential(initial_current, initial_tension, initial_tension, *pulse, &mut self.nodes)?;
+			self
+				.content
+				.init_current_tension_potential(initial_current, initial_tension, initial_tension, *pulse, &mut self.nodes)?;
 		}
 		self.init_state = CircuitInitState::Source;
 		Ok(())

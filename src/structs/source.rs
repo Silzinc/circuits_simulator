@@ -61,8 +61,9 @@ impl Source
 	/// to use in the Fourier series.
 	#[inline]
 	pub fn from_fn<I, F>(f: F, duration: f64, n_freqs_: I) -> Self
-		where F: Fn(f64) -> f64,
-		      I: PrimInt + Debug
+	where
+		F: Fn(f64) -> f64,
+		I: PrimInt + Debug,
 	{
 		let mut source = Self::new();
 		source.set_fn(f, duration, n_freqs_);
@@ -76,8 +77,9 @@ impl Source
 	/// duration of the simulation). The `n_freqs_` parameter specifies the number
 	/// of frequencies to use in the Fourier series.
 	pub fn set_fn<I, F>(&mut self, f: F, duration: f64, n_freqs_: I)
-		where F: Fn(f64) -> f64,
-		      I: PrimInt + Debug
+	where
+		F: Fn(f64) -> f64,
+		I: PrimInt + Debug,
 	{
 		self.clear();
 		let fundamental = (duration + duration).recip(); // Shannon's theorem

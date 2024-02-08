@@ -64,10 +64,12 @@ impl From<ComponentContent> for Component
 	#[inline]
 	fn from(content: ComponentContent) -> Self
 	{
-		Component { content,
-		            impedance: RatioFrac::default(),
-		            fore_node: Id::default(),
-		            init_state: ComponentInitState::default() }
+		Component {
+			content,
+			impedance: RatioFrac::default(),
+			fore_node: Id::default(),
+			init_state: ComponentInitState::default(),
+		}
 	}
 }
 
@@ -251,18 +253,21 @@ impl Component
 	/// Returns an error if the component's initialization state is not
 	/// appropriate or if there is a short circuit in the circuit. For more
 	/// details on short circuits, see `[Circuit::init]`.
-	pub fn init_current_tension_potential(&mut self,
-	                                      current: Complex<f64>,
-	                                      tension: Complex<f64>,
-	                                      fore_potential: Complex<f64>,
-	                                      pulse: f64,
-	                                      nodes: &mut HashMap<Id, Node>)
-	                                      -> Result<()>
+	pub fn init_current_tension_potential(
+		&mut self,
+		current: Complex<f64>,
+		tension: Complex<f64>,
+		fore_potential: Complex<f64>,
+		pulse: f64,
+		nodes: &mut HashMap<Id, Node>,
+	) -> Result<()>
 	{
 		if self.init_state > ComponentInitState::CurrentTensionPotential {
 			return Ok(());
 		} else if self.init_state < ComponentInitState::Impedance {
-			return Err(CircuitBuild("Cannot initialize currents and tensions before the impedance".to_string()));
+			return Err(CircuitBuild(
+				"Cannot initialize currents and tensions before the impedance".to_string(),
+			));
 		}
 
 		let node = nodes.get_mut(self.fore_node.as_slice()).expect("Node not found :/");

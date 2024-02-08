@@ -29,8 +29,9 @@ use rustfft::{num_complex::Complex, FftPlanner};
 /// O(n_freqs)
 
 pub fn fouriers<F, I>(g: F, fundamental: f64, n_freqs_: I) -> Vec<Complex<f64>>
-	where F: Fn(f64) -> f64,
-	      I: PrimInt
+where
+	F: Fn(f64) -> f64,
+	I: PrimInt,
 {
 	let n_freqs = n_freqs_.to_usize().unwrap();
 	assert!(n_freqs > 0);
@@ -50,9 +51,12 @@ pub fn fouriers<F, I>(g: F, fundamental: f64, n_freqs_: I) -> Vec<Complex<f64>>
 	let invn = (n as f64).recip();
 	let halft = 0.5f64 / delta_f;
 
-	let mut vals = (0..n).map(|i| Complex { re: g(t * (i as f64 + 0.5) - halft),
-	                                        im: 0f64, })
-	                     .collect::<Vec<_>>();
+	let mut vals = (0..n)
+		.map(|i| Complex {
+			re: g(t * (i as f64 + 0.5) - halft),
+			im: 0f64,
+		})
+		.collect::<Vec<_>>();
 
 	if fundamental.is_zero() {
 		return vec![vals.iter().sum::<Complex<f64>>() * invn];

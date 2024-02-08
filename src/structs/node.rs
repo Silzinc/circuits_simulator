@@ -30,10 +30,12 @@ impl Node
 	#[inline]
 	pub fn new() -> Self
 	{
-		Node { id:                 Id::new(),
-		       next_comp_tensions: Vec::new(),
-		       potentials:         Vec::new(),
-		       currents:           Vec::new(), }
+		Node {
+			id:                 Id::new(),
+			next_comp_tensions: Vec::new(),
+			potentials:         Vec::new(),
+			currents:           Vec::new(),
+		}
 	}
 }
 
