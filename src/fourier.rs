@@ -30,51 +30,51 @@ use rustfft::{num_complex::Complex, FftPlanner};
 
 pub fn fouriers<F, I>(g: F, fundamental: f64, n_freqs_: I) -> Vec<Complex<f64>>
 where
-	F: Fn(f64) -> f64,
-	I: PrimInt,
+  F: Fn(f64) -> f64,
+  I: PrimInt,
 {
-	let n_freqs = n_freqs_.to_usize().unwrap();
-	assert!(n_freqs > 0);
+  let n_freqs = n_freqs_.to_usize().unwrap();
+  assert!(n_freqs > 0);
 
-	if fundamental.is_sign_negative() {
-		let mut result = fouriers(g, -fundamental, n_freqs_);
-		for c in result.iter_mut() {
-			c.im = -c.im;
-		}
-		return result;
-	}
+  if fundamental.is_sign_negative() {
+    let mut result = fouriers(g, -fundamental, n_freqs_);
+    for c in result.iter_mut() {
+      c.im = -c.im;
+    }
+    return result;
+  }
 
-	let delta_f = fundamental;
-	let n = 2 * n_freqs + 1; // We take the 0 frequency and respect the Shannon-Nyquist criterion
+  let delta_f = fundamental;
+  let n = 2 * n_freqs + 1; // We take the 0 frequency and respect the Shannon-Nyquist criterion
 
-	let t = (delta_f * n as f64).recip();
-	let invn = (n as f64).recip();
-	let halft = 0.5f64 / delta_f;
+  let t = (delta_f * n as f64).recip();
+  let invn = (n as f64).recip();
+  let halft = 0.5f64 / delta_f;
 
-	let mut vals = (0..n)
-		.map(|i| Complex {
-			re: g(t * (i as f64 + 0.5) - halft),
-			im: 0f64,
-		})
-		.collect::<Vec<_>>();
+  let mut vals = (0..n)
+    .map(|i| Complex {
+      re: g(t * (i as f64 + 0.5) - halft),
+      im: 0f64,
+    })
+    .collect::<Vec<_>>();
 
-	if fundamental.is_zero() {
-		return vec![vals.iter().sum::<Complex<f64>>() * invn];
-	}
+  if fundamental.is_zero() {
+    return vec![vals.iter().sum::<Complex<f64>>() * invn];
+  }
 
-	let mut planner = FftPlanner::new();
-	let fft = planner.plan_fft_forward(n);
-	fft.process(&mut vals);
+  let mut planner = FftPlanner::new();
+  let fft = planner.plan_fft_forward(n);
+  fft.process(&mut vals);
 
-	let mut change_sign = false;
-	for val in vals.iter_mut().take(n_freqs + 1) {
-		*val *= invn;
-		if change_sign {
-			*val = -*val;
-		}
-		change_sign = !change_sign;
-	}
-	vals.truncate(n_freqs + 1); // We only keep the half of the spectrum that
-														// follows the Shannon-Nyquist criterion
-	vals
+  let mut change_sign = false;
+  for val in vals.iter_mut().take(n_freqs + 1) {
+    *val *= invn;
+    if change_sign {
+      *val = -*val;
+    }
+    change_sign = !change_sign;
+  }
+  vals.truncate(n_freqs + 1); // We only keep the half of the spectrum that
+                              // follows the Shannon-Nyquist criterion
+  vals
 }
