@@ -41,12 +41,12 @@ pub enum ComponentContent
 pub struct Component
 {
 	/// The content of the component.
-	pub content:    ComponentContent,
+	pub content:      ComponentContent,
 	/// The impedance of the component.
-	pub impedance:  RatioFrac<Complex<f64>>,
+	pub impedance:    RatioFrac<Complex<f64>>,
 	/// The ID of the node connected to the component's fore port.
-	pub fore_node:  Id,
-	pub init_state: ComponentInitState,
+	pub fore_node_id: Id,
+	pub init_state:   ComponentInitState,
 }
 
 impl Component
@@ -67,7 +67,7 @@ impl From<ComponentContent> for Component
 		Component {
 			content,
 			impedance: RatioFrac::default(),
-			fore_node: Id::default(),
+			fore_node_id: Id::default(),
 			init_state: ComponentInitState::default(),
 		}
 	}
@@ -111,13 +111,37 @@ impl Component
 	/// component1.push_serie(component2);
 	/// ```
 	#[inline]
-	pub fn push_serie(&mut self, component: Component) -> &mut Self
+	pub fn push_serie(&mut self, component: Self) -> &mut Self
 	{
 		use ComponentContent::*;
 		match self.content {
-			Poisoned => self.content = component.content,
-			Series(ref mut components) => components.push(component),
-			_ => self.content = Series(vec![std::mem::take(self), component]),
+			Poisoned => {
+				// This should be the case, but we never know
+				// A poisoned state should only be at the root of a newly instanciated circuit
+				assert!(self.fore_node_id.is_empty());
+				self.content = component.content;
+				self.fore_node_id.push(0u8);
+			},
+			Series(ref mut components) => {
+				let mut id = components.last().unwrap().fore_node_id.clone();
+				*id.last_mut().unwrap() += 1u8;
+				components.push(component);
+				components.last_mut().unwrap().fore_node_id = id;
+			},
+			_ => {
+				let mut id = std::mem::take(&mut self.fore_node_id);
+				let mut new_components = vec![std::mem::take(self), component];
+				// Set back self's id
+				self.fore_node_id = id.clone();
+				// Set first serial component's id
+				id.push(0u8);
+				new_components[0].fore_node_id = id.clone();
+				// Set second serial component's id
+				*id.last_mut().unwrap() += 1u8;
+				new_components[1].fore_node_id = id;
+				// Set self's new content
+				self.content = Series(new_components);
+			},
 		};
 		self
 	}
@@ -148,13 +172,37 @@ impl Component
 	/// component1.push_parallel(component2);
 	/// ```
 	#[inline]
-	pub fn push_parallel(&mut self, component: Component) -> &mut Self
+	pub fn push_parallel(&mut self, component: Self) -> &mut Self
 	{
 		use ComponentContent::*;
 		match self.content {
-			Poisoned => self.content = component.content,
-			Parallel(ref mut components) => components.push(component),
-			_ => self.content = Parallel(vec![std::mem::take(self), component]),
+			Poisoned => {
+				// This should be the case, but we never know
+				// A poisoned state should only be at the root of a newly instanciated circuit
+				assert!(self.fore_node_id.is_empty());
+				self.content = component.content;
+				self.fore_node_id.push(0u8);
+			},
+			Parallel(ref mut components) => {
+				let mut id = components.last().unwrap().fore_node_id.clone();
+				*id.last_mut().unwrap() += 1u8;
+				components.push(component);
+				components.last_mut().unwrap().fore_node_id = id;
+			},
+			_ => {
+				let mut id = std::mem::take(&mut self.fore_node_id);
+				let mut new_components = vec![std::mem::take(self), component];
+				// Set back self's id
+				self.fore_node_id = id.clone();
+				// Set first serial component's id
+				id.push(0u8);
+				new_components[0].fore_node_id = id.clone();
+				// Set second serial component's id
+				*id.last_mut().unwrap() += 1u8;
+				new_components[1].fore_node_id = id;
+				// Set self's new content
+				self.content = Parallel(new_components);
+			},
 		};
 		self
 	}
@@ -272,7 +320,7 @@ impl Component
 			));
 		}
 
-		let node = nodes.get_mut(self.fore_node.as_slice()).expect("Node not found :/");
+		let node = nodes.get_mut(self.fore_node_id.as_slice()).expect("Node not found :/");
 		node.currents.push(current);
 		node.next_comp_tensions.push(tension);
 		node.potentials.push(fore_potential);
@@ -296,7 +344,7 @@ impl Component
 						component.init_current_tension_potential(current, next_tension, remaining_potential, pulse, nodes)?;
 						remaining_potential -= next_tension;
 					} else {
-						return short_circuit_current(&component.fore_node, current, &component.impedance);
+						return short_circuit_current(&component.fore_node_id, current, &component.impedance);
 					}
 				}
 			},
@@ -319,7 +367,7 @@ impl Component
 						// We factor by the "admittance ratio"
 						component.init_current_tension_potential(current * current_factor, tension, fore_potential, pulse, nodes)?;
 					} else {
-						return short_circuit_tension(&component.fore_node, tension, &component.impedance);
+						return short_circuit_tension(&component.fore_node_id, tension, &component.impedance);
 					}
 				},
 			_ => (),

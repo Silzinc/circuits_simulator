@@ -120,29 +120,6 @@ impl Component
 	#[inline]
 	pub fn get_comp_by_id_mut(&mut self, id: Id) -> Option<&mut Component> { self.get_comp_by_slice_mut(id.as_slice()) }
 
-	/// Sets the IDs of the `Component` and its children.
-	///
-	/// # Arguments
-	///
-	/// * `id` - An `Id` representing the ID of the `Component`.
-	fn set_id(&mut self, id: &Id) -> &mut Self
-	{
-		use ComponentContent::*;
-		self.fore_node = id.clone();
-		match &mut self.content {
-			Series(components) | Parallel(components) => {
-				let mut next_id = id.clone();
-				next_id.push(0u8);
-				for component in components.iter_mut() {
-					component.set_id(&next_id);
-					next_id[self.fore_node.len()] += 1u8;
-				}
-			},
-			_ => (),
-		};
-		self
-	}
-
 	/// Sets up the nodes of the `Component` and its children. In particular, the
 	/// `nodes` HashMap is filled with the nodes of the circuit. It is assumed
 	/// that the IDs of the `Component` and its children are already set.
@@ -154,7 +131,7 @@ impl Component
 	fn init_nodes(&self, nodes: &mut HashMap<Id, Node>) -> &Self
 	{
 		use ComponentContent::*;
-		let id = &self.fore_node;
+		let id = &self.fore_node_id;
 		let mut node = Node::new();
 		node.id = id.clone();
 		nodes.insert(id.clone(), node);
@@ -179,7 +156,7 @@ impl Circuit
 		if self.init_state > CircuitInitState::CircuitNodes {
 			return self;
 		}
-		self.content.set_id(&vec![0u8]).init_nodes(&mut self.nodes);
+		self.content.init_nodes(&mut self.nodes);
 		self.init_state = CircuitInitState::CircuitNodes;
 		self
 	}
