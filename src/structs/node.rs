@@ -131,9 +131,7 @@ impl Component
 		self.fore_node = id.clone();
 		match &mut self.content {
 			Series(components) | Parallel(components) => {
-				let mut next_id = Id::new();
-				next_id.reserve_exact(self.fore_node.len() + 1);
-				next_id.extend_from_slice(&self.fore_node);
+				let mut next_id = id.clone();
 				next_id.push(0u8);
 				for component in components.iter_mut() {
 					component.set_id(&next_id);
