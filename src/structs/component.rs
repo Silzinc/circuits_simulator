@@ -51,7 +51,7 @@ impl Serialize for ComponentContent
         state.serialize_field("components", components)?;
       },
       ComponentContent::Series(components) => {
-        state.serialize_field("type", "series")?;
+        state.serialize_field("type", "serie")?;
         state.serialize_field("components", components)?;
       },
       ComponentContent::Simple(dipole) => {
@@ -164,7 +164,6 @@ impl Component
         // A poisoned state should only be at the root of a newly instanciated circuit
         assert!(self.fore_node_id.is_empty());
         self.content = component.content;
-        self.fore_node_id.push(0u8);
       },
       Series(ref mut components) => {
         let mut id = components.last().unwrap().fore_node_id.clone();
@@ -225,7 +224,6 @@ impl Component
         // A poisoned state should only be at the root of a newly instanciated circuit
         assert!(self.fore_node_id.is_empty());
         self.content = component.content;
-        self.fore_node_id.push(0u8);
       },
       Parallel(ref mut components) => {
         let mut id = components.last().unwrap().fore_node_id.clone();
