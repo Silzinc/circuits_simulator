@@ -1,11 +1,12 @@
 use super::{Dipole, Id, Node};
 use crate::{
-  error::{short_circuit_current, short_circuit_tension, Error::CircuitBuild, Result},
+  error::{self, short_circuit_current, short_circuit_tension, Error::CircuitBuild},
   util::{evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x},
 };
 use fractios::RatioFrac;
 use num::complex::Complex;
 use num_traits::Zero;
+use serde::{ser::SerializeStruct, Serialize, Serializer};
 use std::collections::HashMap;
 
 /// Represents the initialisation state of a component.
@@ -36,6 +37,35 @@ pub enum ComponentContent
   Poisoned,
 }
 
+impl Serialize for ComponentContent
+{
+  #[inline]
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let mut state = serializer.serialize_struct("ComponentContent", 2)?;
+    match self {
+      ComponentContent::Parallel(components) => {
+        state.serialize_field("type", "parallel")?;
+        state.serialize_field("components", components)?;
+      },
+      ComponentContent::Series(components) => {
+        state.serialize_field("type", "series")?;
+        state.serialize_field("components", components)?;
+      },
+      ComponentContent::Simple(dipole) => {
+        state.serialize_field("type", "simple")?;
+        state.serialize_field("dipole", dipole)?;
+      },
+      ComponentContent::Poisoned => {
+        state.serialize_field("type", "poisoned")?;
+      },
+    }
+    state.end()
+  }
+}
+
 /// A struct representing a circuit component.
 #[derive(Clone, Debug, Default)]
 pub struct Component
@@ -57,6 +87,20 @@ impl Component
   /// Returns the impedance of the component for a given pulse.
   #[inline]
   pub fn impedance(&self, pulse: f64) -> Complex<f64> { self.impedance.eval(Complex::from(pulse)) }
+}
+
+impl Serialize for Component
+{
+  #[inline]
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    let mut state = serializer.serialize_struct("Component", 2)?;
+    state.serialize_field("content", &self.content)?;
+    state.serialize_field("foreNodeId", &String::from_utf8(self.fore_node_id.clone()).unwrap())?;
+    state.end()
+  }
 }
 
 impl From<ComponentContent> for Component
@@ -209,7 +253,7 @@ impl Component
 
   // Swaps two components in a branch
   #[inline]
-  pub fn swap(&mut self, index1: usize, index2: usize) -> Result<&mut Self>
+  pub fn swap(&mut self, index1: usize, index2: usize) -> error::Result<&mut Self>
   {
     use ComponentContent::*;
     match &mut self.content {
@@ -250,7 +294,7 @@ impl Component
   ///
   /// assert!(result.is_ok());
   /// ```
-  pub fn init_impedance(&mut self) -> Result<&mut Self>
+  pub fn init_impedance(&mut self) -> error::Result<&mut Self>
   {
     if self.init_state > ComponentInitState::Impedance {
       return Ok(self);
@@ -310,7 +354,7 @@ impl Component
     fore_potential: Complex<f64>,
     pulse: f64,
     nodes: &mut HashMap<Id, Node>,
-  ) -> Result<&mut Self>
+  ) -> error::Result<&mut Self>
   {
     if self.init_state > ComponentInitState::CurrentTensionPotential {
       return Ok(self);
@@ -322,7 +366,7 @@ impl Component
 
     let node = nodes.get_mut(self.fore_node_id.as_slice()).expect("Node not found :/");
     node.currents.push(current);
-    node.next_comp_tensions.push(tension);
+    node.next_component_tensions.push(tension);
     node.potentials.push(fore_potential);
 
     use ComponentContent::*;
