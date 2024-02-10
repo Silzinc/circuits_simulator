@@ -67,7 +67,7 @@ impl Circuit
   ///
   /// # Returns
   ///
-  /// Returns `Ok(())` if the circuit was successfully initialized.
+  /// Returns `Ok(self)` if the circuit was successfully initialized.
   pub fn init(&mut self) -> Result<&mut Self>
   {
     if self.init_state == CircuitInitState::Source {
