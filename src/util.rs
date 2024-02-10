@@ -1,25 +1,12 @@
 #![allow(dead_code)]
 use fractios::RatioFrac;
 use num_traits::Zero;
-use std::{
-	cell::RefCell,
-	rc::{Rc, Weak},
-};
 
-// (DEPRECATED) Weak link without ownership
-pub(crate) type WeakLink<T> = Weak<RefCell<T>>;
-// (DEPRECATED) String link with ownership
-pub(crate) type StrongLink<T> = Rc<RefCell<T>>;
-
-#[inline]
-pub(crate) fn strong_link<T>(t: T) -> StrongLink<T> { Rc::new(RefCell::new(t)) }
-#[inline]
-pub(crate) fn weak_link<T>(t: &StrongLink<T>) -> WeakLink<T> { Rc::downgrade(t) }
-
-// Note that an impedance is never a multiple of x² or 1/x²
-// In particular, a component behaves as a wire under a constant tension if and
-// only if its impedance is a multiple of x and as an open interruptor if and
-// only if its impedance is a multiple of 1/x
+// Note that an impedance is never a multiple of x² or 1/x², where x is the
+// pulse. In particular, a component behaves as a wire under a constant tension
+// if and only if its impedance is a multiple of x and as an open interruptor if
+// and only if its impedance is a multiple of 1/x. The following functions help
+// to handle these cases.
 
 // The ratiofrac is assumed to be reduced in the following functions
 #[inline]
