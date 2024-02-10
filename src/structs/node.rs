@@ -56,6 +56,9 @@ impl Component
   pub fn get_comp_by_id(&self, id: &[u8]) -> Option<&Component>
   {
     use ComponentContent::*;
+    if id.is_empty() {
+      return Some(self);
+    }
     match self.content {
       Series(ref components) | Parallel(ref components) => {
         let index = id[0] as usize;
@@ -65,7 +68,6 @@ impl Component
           None
         }
       },
-      Simple(_) if id.is_empty() => Some(self),
       _ => None,
     }
   }
@@ -84,6 +86,9 @@ impl Component
   pub fn get_comp_by_id_mut(&mut self, id: &[u8]) -> Option<&mut Component>
   {
     use ComponentContent::*;
+    if id.is_empty() {
+      return Some(self);
+    }
     match self.content {
       Series(ref mut components) | Parallel(ref mut components) => {
         let index = id[0] as usize;
@@ -93,7 +98,6 @@ impl Component
           None
         }
       },
-      Simple(_) if id.is_empty() => Some(self),
       _ => None,
     }
   }

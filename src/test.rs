@@ -29,16 +29,16 @@ fn test_() -> crate::error::Result<()>
   let mut c = Circuit::new();
   c.source = Source::from_fn(square_wave, duration, n_freqs);
   c.content
-    .push_serie(Component::from(Resistor(200.))) // 0.2 kΩ, at position [0, 0]
-    .push_serie(Component::from(Capacitor(10e-9))) // 10 nF at position [0, 1]
-    .push_serie(Component::from(Inductor(100e-3))); // 100 mH at position [0, 2]
+    .push_serie(Component::from(Resistor(200.))) // 0.2 kΩ, at position [0]
+    .push_serie(Component::from(Capacitor(10e-9))) // 10 nF at position [1]
+    .push_serie(Component::from(Inductor(100e-3))); // 100 mH at position [2]
 
   // With this, the attenuation time is 500 µs
   // and the pseudo-period is close to 200 µs
 
   // Simulate the circuit
   let start = Instant::now();
-  let result = c.emulate_many(duration, step, &vec![vec![0u8], vec![0u8, 1u8]])?;
+  let result = c.emulate_many(duration, step, &vec![vec![], vec![1u8]])?;
   let time_required = start.elapsed().as_secs_f64();
   println!("Time required to emulate the circuit: {}s", time_required);
 
