@@ -42,56 +42,6 @@ impl Node
 /// Implementation of the `Component` trait for the `Node` struct.
 impl Component
 {
-  /// Same as `get_comp_by_id` but the input is a slice of bytes instead of an
-  /// `Id`.
-  fn get_comp_by_slice(&self, id: &[u8]) -> Option<&Component>
-  {
-    if id.is_empty() {
-      panic!("The id is empty")
-    } else {
-      match &self.content {
-        ComponentContent::Series(components) | ComponentContent::Parallel(components) => {
-          let index = id[0] as usize;
-          if index < components.len() {
-            if id.len() == 1 {
-              Some(&components[index])
-            } else {
-              components[index].get_comp_by_slice(&id[1..])
-            }
-          } else {
-            None
-          }
-        },
-        _ => None,
-      }
-    }
-  }
-
-  /// Same as `get_comp_by_id_mut` but the input is a slice of bytes instead of
-  /// an `Id`.
-  fn get_comp_by_slice_mut(&mut self, id: &[u8]) -> Option<&mut Component>
-  {
-    if id.is_empty() {
-      panic!("The id is empty")
-    } else {
-      match &mut self.content {
-        ComponentContent::Series(components) | ComponentContent::Parallel(components) => {
-          let index = id[0] as usize;
-          if index < components.len() {
-            if id.len() == 1 {
-              Some(&mut components[index])
-            } else {
-              components[index].get_comp_by_slice_mut(&id[1..])
-            }
-          } else {
-            None
-          }
-        },
-        _ => None,
-      }
-    }
-  }
-
   /// Returns an `Option` containing a reference to a `Component` based on its
   /// ID.
   ///
@@ -103,8 +53,22 @@ impl Component
   ///
   /// An `Option` containing a reference to a `Component` if it exists,
   /// otherwise `None`.
-  #[inline]
-  pub fn get_comp_by_id(&self, id: Id) -> Option<&Component> { self.get_comp_by_slice(id.as_slice()) }
+  pub fn get_comp_by_id(&self, id: &[u8]) -> Option<&Component>
+  {
+    use ComponentContent::*;
+    match self.content {
+      Series(ref components) | Parallel(ref components) => {
+        let index = id[0] as usize;
+        if index < components.len() {
+          components[index].get_comp_by_id(&id[1..])
+        } else {
+          None
+        }
+      },
+      Simple(_) if id.is_empty() => Some(self),
+      _ => None,
+    }
+  }
 
   /// Returns an `Option` containing a mutable reference to a `Component` based
   /// on its ID.
@@ -117,8 +81,22 @@ impl Component
   ///
   /// An `Option` containing a reference to a `Component` if it exists,
   /// otherwise `None`.
-  #[inline]
-  pub fn get_comp_by_id_mut(&mut self, id: Id) -> Option<&mut Component> { self.get_comp_by_slice_mut(id.as_slice()) }
+  pub fn get_comp_by_id_mut(&mut self, id: &[u8]) -> Option<&mut Component>
+  {
+    use ComponentContent::*;
+    match self.content {
+      Series(ref mut components) | Parallel(ref mut components) => {
+        let index = id[0] as usize;
+        if index < components.len() {
+          components[index].get_comp_by_id_mut(&id[1..])
+        } else {
+          None
+        }
+      },
+      Simple(_) if id.is_empty() => Some(self),
+      _ => None,
+    }
+  }
 
   /// Sets up the nodes of the `Component` and its children. In particular, the
   /// `nodes` HashMap is filled with the nodes of the circuit. It is assumed
