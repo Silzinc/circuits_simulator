@@ -16,7 +16,7 @@ pub struct Node
   pub id: Id,
 
   /// The tensions of the next components connected to the node for each pulse.
-  pub next_comp_tensions: Vec<Complex<f64>>,
+  pub next_component_tensions: Vec<Complex<f64>>,
 
   /// The potentials of the node for each pulse.
   pub potentials: Vec<Complex<f64>>,
@@ -31,10 +31,10 @@ impl Node
   pub fn new() -> Self
   {
     Node {
-      id:                 Id::new(),
-      next_comp_tensions: Vec::new(),
-      potentials:         Vec::new(),
-      currents:           Vec::new(),
+      id: Id::new(),
+      next_component_tensions: Vec::new(),
+      potentials: Vec::new(),
+      currents: Vec::new(),
     }
   }
 }

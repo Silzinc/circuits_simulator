@@ -110,7 +110,7 @@ impl Circuit
   {
     self.init_state = self.init_state.min(CircuitInitState::CircuitNodes);
     for node in self.nodes.values_mut() {
-      node.next_comp_tensions.clear();
+      node.next_component_tensions.clear();
       node.currents.clear();
       node.potentials.clear();
     }

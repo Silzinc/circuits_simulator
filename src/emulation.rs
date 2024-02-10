@@ -39,7 +39,7 @@ impl Circuit
       .get_mut(node_id)
       .unwrap_or_else(|| panic!("Node of id {node_id:?} not found :/"));
     let initial_currents = &node.currents;
-    let initial_tensions = &node.next_comp_tensions;
+    let initial_tensions = &node.next_component_tensions;
     let initial_potentials = &node.potentials;
 
     let nb_iter = (duration / step).ceil() as usize;
