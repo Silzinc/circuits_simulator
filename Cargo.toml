@@ -5,14 +5,14 @@ edition = "2021"
 
 [dependencies]
 num = "0.4.1"
-num-traits = "0.2.16"
-fractios = {version = "0.1.0", git = "https://github.com/Silzinc/fractios"}
-polyx = {version = "0.1.0", git = "https://github.com/Silzinc/polyx"}
-rustfft = "6.1.0"
-serde = "1.0.196"
+num-traits = "0.2.18"
+fractios = { version = "0.1.0", git = "https://github.com/Silzinc/fractios" }
+polyx = { version = "0.1.0", git = "https://github.com/Silzinc/polyx" }
+rustfft = "6.2.0"
+serde = "1.0.197"
 
 [dev-dependencies]
-plotters = "0.3.3"
+plotters = "0.3.5"
 
 [profile.release]
 lto = true
