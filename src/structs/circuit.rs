@@ -86,9 +86,13 @@ impl Circuit
       self.content.impedance.inv_inplace();
       let initial_current = initial_tension * self.content.impedance.eval(Complex::from(*pulse));
       self.content.impedance.inv_inplace();
-      self
-        .content
-        .init_current_tension_potential(initial_current, initial_tension, initial_tension, *pulse, &mut self.nodes)?;
+      self.content.init_current_tension_potential(
+        initial_current,
+        initial_tension,
+        initial_tension,
+        *pulse,
+        &mut self.nodes,
+      )?;
     }
     self.init_state = CircuitInitState::Source;
     Ok(self)

@@ -43,7 +43,10 @@ impl Source
   #[inline]
   pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>) -> &mut Self
   {
-    match self.voltages.binary_search_by_key(&NonNan(pulse), |&(f, _)| NonNan(f)) {
+    match self
+      .voltages
+      .binary_search_by_key(&NonNan(pulse), |&(f, _)| NonNan(f))
+    {
       Ok(index) => self.voltages[index].1 = voltage,
       Err(index) => self.voltages.insert(index, (pulse, voltage)),
     };
@@ -96,7 +99,9 @@ impl Source
   {
     self.clear();
     let fundamental = (duration + duration).recip(); // Shannon's theorem
-    let n_freqs = n_freqs_.to_usize().unwrap_or_else(|| panic!("Failed to convert {n_freqs_:?} to usize"));
+    let n_freqs = n_freqs_
+      .to_usize()
+      .unwrap_or_else(|| panic!("Failed to convert {n_freqs_:?} to usize"));
     let fourier_coefs = fouriers(f, fundamental, n_freqs - 1);
     let twopif = fundamental * 2. * std::f64::consts::PI;
 

@@ -10,9 +10,15 @@ use num_traits::Zero;
 
 // The ratiofrac is assumed to be reduced in the following functions
 #[inline]
-pub(crate) fn is_multiple_of_x<T: Zero + Clone>(r: &RatioFrac<T>) -> bool { r.numerator[0].is_zero() }
+pub(crate) fn is_multiple_of_x<T: Zero + Clone>(r: &RatioFrac<T>) -> bool
+{
+  r.numerator[0].is_zero()
+}
 #[inline]
-pub(crate) fn is_multiple_of_invx<T: Zero + Clone>(r: &RatioFrac<T>) -> bool { r.denominator[0].is_zero() }
+pub(crate) fn is_multiple_of_invx<T: Zero + Clone>(r: &RatioFrac<T>) -> bool
+{
+  r.denominator[0].is_zero()
+}
 
 #[inline]
 pub(crate) fn evaluate_zero_without_x<T>(r: &RatioFrac<T>) -> T

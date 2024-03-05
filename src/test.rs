@@ -61,10 +61,16 @@ fn test_() -> crate::error::Result<()>
     .build_cartesian_2d(0f64..duration, -3f64..3f64)
     .expect("Failed to build the chart");
 
-  chart.configure_mesh().draw().expect("Failed to draw the mesh");
+  chart
+    .configure_mesh()
+    .draw()
+    .expect("Failed to draw the mesh");
   chart
     .draw_series(LineSeries::new(
-      time_array.iter().zip(tensions1.iter()).map(|(x, y)| (*x, *y)),
+      time_array
+        .iter()
+        .zip(tensions1.iter())
+        .map(|(x, y)| (*x, *y)),
       &RED,
     ))
     .expect("Failed to draw the source's tensions")
@@ -72,7 +78,10 @@ fn test_() -> crate::error::Result<()>
     .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
   chart
     .draw_series(LineSeries::new(
-      time_array.iter().zip(tensions2.iter()).map(|(x, y)| (*x, *y)),
+      time_array
+        .iter()
+        .zip(tensions2.iter())
+        .map(|(x, y)| (*x, *y)),
       &BLUE,
     ))
     .expect("Failed to draw the capacitor's tensions")

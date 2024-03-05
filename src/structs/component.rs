@@ -1,7 +1,9 @@
 use super::{Dipole, Id, Node};
 use crate::{
   error::{self, short_circuit_current, short_circuit_tension, Error::CircuitBuild},
-  util::{evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x},
+  util::{
+    evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x,
+  },
 };
 use fractios::RatioFrac;
 use num::complex::Complex;
@@ -256,7 +258,8 @@ impl Component
     use ComponentContent::*;
     match &mut self.content {
       Series(components) | Parallel(components) => components.swap(index1, index2),
-      _ => return Err(CircuitBuild("Cannot swap components in a non-branch component".to_string())),
+      _ =>
+        return Err(CircuitBuild("Cannot swap components in a non-branch component".to_string())),
     }
     Ok(self)
   }
@@ -323,7 +326,8 @@ impl Component
         self.impedance = impedance;
       },
       Simple(dipole) => self.impedance = dipole.impedance()?,
-      Poisoned => return Err(CircuitBuild("Cannot initialize impedance of poisoned component".to_string())),
+      Poisoned =>
+        return Err(CircuitBuild("Cannot initialize impedance of poisoned component".to_string())),
     };
     self.init_state = ComponentInitState::Impedance;
     Ok(self)
@@ -356,13 +360,16 @@ impl Component
   {
     if self.init_state > ComponentInitState::CurrentTensionPotential {
       return Ok(self);
-    } else if self.init_state < ComponentInitState::Impedance {
+    }
+    if self.init_state < ComponentInitState::Impedance {
       return Err(CircuitBuild(
         "Cannot initialize currents and tensions before the impedance".to_string(),
       ));
     }
 
-    let node = nodes.get_mut(self.fore_node_id.as_slice()).expect("Node not found :/");
+    let node = nodes
+      .get_mut(self.fore_node_id.as_slice())
+      .expect("Node not found :/");
     node.currents.push(current);
     node.next_component_tensions.push(tension);
     node.potentials.push(fore_potential);
@@ -374,7 +381,13 @@ impl Component
         for component in components.iter_mut() {
           if !pulse.is_zero() || !is_multiple_of_invx(&component.impedance) {
             let next_tension = current * component.impedance.eval(Complex::from(pulse));
-            component.init_current_tension_potential(current, next_tension, remaining_potential, pulse, nodes)?;
+            component.init_current_tension_potential(
+              current,
+              next_tension,
+              remaining_potential,
+              pulse,
+              nodes,
+            )?;
             remaining_potential -= next_tension;
           } else if current.is_zero() {
             /* We suppose a zero current is always due to a zero admittance
@@ -382,15 +395,22 @@ impl Component
             panicked */
             assert!(is_multiple_of_invx(&self.impedance));
             // We factor by the "impedance ratio"
-            let next_tension = tension * evaluate_zero_without_invx(&component.impedance) / evaluate_zero_without_invx(&self.impedance);
-            component.init_current_tension_potential(current, next_tension, remaining_potential, pulse, nodes)?;
+            let next_tension = tension * evaluate_zero_without_invx(&component.impedance)
+              / evaluate_zero_without_invx(&self.impedance);
+            component.init_current_tension_potential(
+              current,
+              next_tension,
+              remaining_potential,
+              pulse,
+              nodes,
+            )?;
             remaining_potential -= next_tension;
           } else {
             return short_circuit_current(&component.fore_node_id, current, &component.impedance);
           }
         }
       },
-      Parallel(components) =>
+      Parallel(components) => {
         for component in components.iter_mut() {
           if !pulse.is_zero() || !is_multiple_of_x(&component.impedance) {
             // Better to do inv_inplace instead of calling .inv() on the impendance because
@@ -399,19 +419,33 @@ impl Component
             let evaluated_admittance = component.impedance.eval(Complex::from(pulse));
             component.impedance.inv_inplace();
 
-            component.init_current_tension_potential(tension * evaluated_admittance, tension, fore_potential, pulse, nodes)?;
+            component.init_current_tension_potential(
+              tension * evaluated_admittance,
+              tension,
+              fore_potential,
+              pulse,
+              nodes,
+            )?;
           } else if tension.is_zero() {
             /* We suppose a zero tension is always due to a zero impedance
             Otherwise, the emulation for this pulse would not have started or have
             panicked */
             assert!(is_multiple_of_x(&self.impedance));
-            let current_factor = evaluate_zero_without_x(&self.impedance) / evaluate_zero_without_x(&component.impedance);
+            let current_factor = evaluate_zero_without_x(&self.impedance)
+              / evaluate_zero_without_x(&component.impedance);
             // We factor by the "admittance ratio"
-            component.init_current_tension_potential(current * current_factor, tension, fore_potential, pulse, nodes)?;
+            component.init_current_tension_potential(
+              current * current_factor,
+              tension,
+              fore_potential,
+              pulse,
+              nodes,
+            )?;
           } else {
             return short_circuit_tension(&component.fore_node_id, tension, &component.impedance);
           }
-        },
+        }
+      },
       _ => (),
     };
     self.init_state = ComponentInitState::CurrentTensionPotential;

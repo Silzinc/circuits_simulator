@@ -40,20 +40,30 @@ impl From<IOError> for Error
   fn from(e: IOError) -> Self { Error::IO(e) }
 }
 
-pub(crate) fn short_circuit_current<U: Debug, V: Debug, T>(id: &Id, current: U, impedance: &RatioFrac<V>) -> Result<T>
+pub(crate) fn short_circuit_current<U: Debug, V: Debug, T>(
+  id: &Id,
+  current: U,
+  impedance: &RatioFrac<V>,
+) -> Result<T>
 {
   Err(Error::CircuitSolve(format!(
-    "Short circuit is caused by a non zero constant current source on a zero admittance component\n\nComponent Id: {:?}\nCurrent: {:?} A\nImpedance \
-     (rational fraction of pulse):\n{:?}\n-------\n{:?}",
+    "Short circuit is caused by a non zero constant current source on a zero admittance \
+     component\n\nComponent Id: {:?}\nCurrent: {:?} A\nImpedance (rational fraction of \
+     pulse):\n{:?}\n-------\n{:?}",
     id, current, impedance.numerator, impedance.denominator
   )))
 }
 
-pub(crate) fn short_circuit_tension<U: Debug, V: Debug, T>(id: &Id, tension: U, impedance: &RatioFrac<V>) -> Result<T>
+pub(crate) fn short_circuit_tension<U: Debug, V: Debug, T>(
+  id: &Id,
+  tension: U,
+  impedance: &RatioFrac<V>,
+) -> Result<T>
 {
   Err(Error::CircuitSolve(format!(
-    "Short circuit is caused by a non zero constant tension source on a zero impedance component\n\nComponent Id: {:?}\nTension: {:?} V\nImpedance \
-     (rational fraction of pulse):\n{:?}\n-------\n{:?}",
+    "Short circuit is caused by a non zero constant tension source on a zero impedance \
+     component\n\nComponent Id: {:?}\nTension: {:?} V\nImpedance (rational fraction of \
+     pulse):\n{:?}\n-------\n{:?}",
     id, tension, impedance.numerator, impedance.denominator
   )))
 }

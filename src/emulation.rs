@@ -94,7 +94,12 @@ impl Circuit
   /// Returns an error if the initialization of the circuit fails or if the
   /// emulation of a node fails.
   #[inline]
-  pub fn emulate_many(&mut self, duration: f64, step: f64, node_ids: &Vec<Id>) -> Result<Vec<EmulationData>>
+  pub fn emulate_many(
+    &mut self,
+    duration: f64,
+    step: f64,
+    node_ids: &Vec<Id>,
+  ) -> Result<Vec<EmulationData>>
   {
     self.init()?;
     let mut results = Vec::with_capacity(node_ids.len());
