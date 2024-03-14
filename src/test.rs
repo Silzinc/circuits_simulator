@@ -1,17 +1,14 @@
-fn test_() -> crate::error::Result<()>
-{
+fn test_() -> crate::error::Result<()> {
   // Emulate a serial RLC circuit with a square wave of period
   // 4 ms that starts after 2 ms as input
   use crate::{
     Circuit, Component,
     Dipole::{Capacitor, Inductor, Resistor},
-    Source,
   };
   use plotters::prelude::*;
   use std::{env, time::Instant};
 
-  fn square_wave(x: f64) -> f64
-  {
+  fn square_wave(x: f64) -> f64 {
     if x < 2e-3 {
       0.
     } else if ((x + 2e-3) % 4e-3) > 2e-3 {
@@ -27,7 +24,7 @@ fn test_() -> crate::error::Result<()>
 
   // Create the serial RLC circuit
   let mut c = Circuit::new();
-  c.source = Source::from_fn(square_wave, duration, n_freqs);
+  c.set_generator_fn(square_wave, duration, n_freqs);
   c.content
     .push_serie(Component::from(Resistor(200.))) // 0.2 kΩ, at position [0]
     .push_serie(Component::from(Capacitor(10e-9))) // 10 nF at position [1]
@@ -100,8 +97,7 @@ fn test_() -> crate::error::Result<()>
 }
 
 #[test]
-fn test()
-{
+fn test() {
   if let Err(e) = test_() {
     panic!("{}", e);
   }
