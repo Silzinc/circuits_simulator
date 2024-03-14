@@ -112,6 +112,10 @@ impl Source
     }
     self
   }
+
+  /// Non-consuming iterator over the pulses and their voltages
+  #[inline]
+  pub fn voltages(&self) -> impl Iterator<Item = &(f64, Complex<f64>)> { self.voltages.iter() }
 }
 
 impl Circuit
@@ -165,4 +169,8 @@ impl Circuit
     self.source.set_fn(f, duration, n_freqs);
     self.uninit_source()
   }
+
+  /// Non-consuming iterator over the pulses and their voltages
+  #[inline]
+  pub fn voltages(&self) -> impl Iterator<Item = &(f64, Complex<f64>)> { self.source.voltages() }
 }
