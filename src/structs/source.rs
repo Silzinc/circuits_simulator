@@ -5,7 +5,8 @@ use std::fmt::Debug;
 
 #[derive(Clone, Debug, Default)]
 /// A source of voltage.
-pub struct Source {
+pub struct Source
+{
   /// Map between pulses (sorted) and voltages.
   pub voltages: Vec<(f64, Complex<f64>)>,
 }
@@ -16,23 +17,22 @@ struct NonNan(f64);
 
 impl Eq for NonNan {}
 #[allow(clippy::derive_ord_xor_partial_ord)]
-impl Ord for NonNan {
+impl Ord for NonNan
+{
   #[inline]
-  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-    self.partial_cmp(other).unwrap()
-  }
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering { self.partial_cmp(other).unwrap() }
 }
 
-impl Source {
+impl Source
+{
   /// Creates a new `Source` with an empty vector of voltages.
   #[inline]
-  pub fn new() -> Self {
-    Source { voltages: vec![] }
-  }
+  pub fn new() -> Self { Source { voltages: vec![] } }
 
   /// Sets the voltage at a specific index in the `voltages` vector.
   #[inline]
-  pub fn set_voltage(&mut self, index: usize, voltage: Complex<f64>) -> &mut Self {
+  pub fn set_voltage(&mut self, index: usize, voltage: Complex<f64>) -> &mut Self
+  {
     self.voltages[index].1 = voltage;
     self
   }
@@ -41,7 +41,8 @@ impl Source {
   /// pulse is already present, its voltage is updated. The pulse is represented
   /// by a voltage value.
   #[inline]
-  pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>) -> &mut Self {
+  pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>) -> &mut Self
+  {
     match self
       .voltages
       .binary_search_by_key(&NonNan(pulse), |&(f, _)| NonNan(f))
@@ -54,14 +55,16 @@ impl Source {
 
   /// Removes the pulse at the specified index from the `voltages` vector.
   #[inline]
-  pub fn remove_pulse(&mut self, index: usize) -> &mut Self {
+  pub fn remove_pulse(&mut self, index: usize) -> &mut Self
+  {
     self.voltages.remove(index);
     self
   }
 
   /// Clears the `voltages` vector.
   #[inline]
-  pub fn clear(&mut self) -> &mut Self {
+  pub fn clear(&mut self) -> &mut Self
+  {
     self.voltages.clear();
     self
   }
@@ -111,10 +114,12 @@ impl Source {
   }
 }
 
-impl Circuit {
+impl Circuit
+{
   /// Sets the voltage at a specific index in the `voltages` vector.
   #[inline]
-  pub fn set_voltage(&mut self, index: usize, voltage: Complex<f64>) -> &mut Self {
+  pub fn set_voltage(&mut self, index: usize, voltage: Complex<f64>) -> &mut Self
+  {
     self.source.set_voltage(index, voltage);
     self.uninit_source()
   }
@@ -123,21 +128,24 @@ impl Circuit {
   /// pulse is already present, its voltage is updated. The pulse is represented
   /// by a voltage value.
   #[inline]
-  pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>) -> &mut Self {
+  pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>) -> &mut Self
+  {
     self.source.add_pulse(pulse, voltage);
     self.uninit_source()
   }
 
   /// Removes the pulse at the specified index from the generator.
   #[inline]
-  pub fn remove_pulse(&mut self, index: usize) -> &mut Self {
+  pub fn remove_pulse(&mut self, index: usize) -> &mut Self
+  {
     self.source.remove_pulse(index);
     self.uninit_source()
   }
 
   /// Clears the pulses of the generator.
   #[inline]
-  pub fn clear_source(&mut self) -> &mut Self {
+  pub fn clear_source(&mut self) -> &mut Self
+  {
     self.source.clear();
     self.uninit_source()
   }
