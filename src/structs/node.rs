@@ -39,69 +39,8 @@ impl Node
   }
 }
 
-/// Implementation of the `Component` trait for the `Node` struct.
 impl Component
 {
-  /// Returns an `Option` containing a reference to a `Component` based on its
-  /// ID.
-  ///
-  /// # Arguments
-  ///
-  /// * `id` - An `Id` representing the ID of the `Component`.
-  ///
-  /// # Returns
-  ///
-  /// An `Option` containing a reference to a `Component` if it exists,
-  /// otherwise `None`.
-  pub fn get_comp_by_id(&self, id: &[u8]) -> Option<&Component>
-  {
-    use ComponentContent::*;
-    if id.is_empty() {
-      return Some(self);
-    }
-    match self.content {
-      Series(ref components) | Parallel(ref components) => {
-        let index = id[0] as usize;
-        if index < components.len() {
-          components[index].get_comp_by_id(&id[1..])
-        } else {
-          None
-        }
-      },
-      _ => None,
-    }
-  }
-
-  /// Returns an `Option` containing a mutable reference to a `Component` based
-  /// on its ID.
-  ///
-  /// # Arguments
-  ///
-  /// * `id` - An `Id` representing the ID of the `Component`.
-  ///
-  /// # Returns
-  ///
-  /// An `Option` containing a reference to a `Component` if it exists,
-  /// otherwise `None`.
-  pub fn get_comp_by_id_mut(&mut self, id: &[u8]) -> Option<&mut Component>
-  {
-    use ComponentContent::*;
-    if id.is_empty() {
-      return Some(self);
-    }
-    match self.content {
-      Series(ref mut components) | Parallel(ref mut components) => {
-        let index = id[0] as usize;
-        if index < components.len() {
-          components[index].get_comp_by_id_mut(&id[1..])
-        } else {
-          None
-        }
-      },
-      _ => None,
-    }
-  }
-
   /// Sets up the nodes of the `Component` and its children. In particular, the
   /// `nodes` HashMap is filled with the nodes of the circuit. It is assumed
   /// that the IDs of the `Component` and its children are already set.
@@ -128,7 +67,6 @@ impl Component
   }
 }
 
-/// Implementation of the `Circuit` struct.
 impl Circuit
 {
   /// Sets up the nodes IDs of the `Circuit` and its components.
@@ -142,4 +80,33 @@ impl Circuit
     self.init_state = CircuitInitState::CircuitNodes;
     self
   }
+}
+
+impl Circuit
+{
+  /// Retrieves a node from the circuit based on its ID.
+  ///
+  /// # Arguments
+  ///
+  /// * `id` - The ID of the node to retrieve.
+  ///
+  /// # Returns
+  ///
+  /// An `Option` containing a reference to the node if it exists, otherwise
+  /// `None`.
+  #[inline]
+  pub fn get_node(&self, id: &Id) -> Option<&Node> { self.nodes.get(id) }
+
+  /// Retrieves a mutable node from the circuit based on its ID.
+  ///
+  /// # Arguments
+  ///
+  /// * `id` - The ID of the node to retrieve.
+  ///
+  /// # Returns
+  ///
+  /// An `Option` containing a mutable reference to the node if it exists,
+  /// otherwise `None`.
+  #[inline]
+  pub fn get_node_mut(&mut self, id: &Id) -> Option<&mut Node> { self.nodes.get_mut(id) }
 }

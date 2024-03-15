@@ -35,8 +35,7 @@ impl Circuit
     self.init()?;
 
     let node = self
-      .nodes
-      .get_mut(node_id)
+      .get_node(node_id)
       .unwrap_or_else(|| panic!("Node of id {node_id:?} not found :/"));
     let initial_currents = &node.currents;
     let initial_tensions = &node.next_component_tensions;
@@ -52,12 +51,12 @@ impl Circuit
       let mut current = initial_currents[0].re;
       let mut tension = initial_tensions[0].re;
       let mut potential = initial_potentials[0].re;
-      for (k, (pulse, voltage)) in self.source.voltages.iter().enumerate() {
+      for (k, (pulse, voltage)) in self.voltages().enumerate() {
         if voltage.is_zero() || pulse.is_zero() {
           continue;
         }
         if pulse.is_zero() {
-          return short_circuit_current(&vec![0u8], voltage, &self.content.impedance);
+          return short_circuit_current(&vec![0u8], voltage, self.impedance());
         }
         let factor = Complex::new(0f64, elapsed * *pulse).exp();
         // This way we know we can approximate a real function such as current or

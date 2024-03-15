@@ -27,15 +27,15 @@ pub enum CircuitInitState
 pub struct Circuit
 {
   /// The initialisation state of the circuit.
-  pub(crate) init_state: CircuitInitState,
+  pub(super) init_state: CircuitInitState,
   /// The source component of the circuit.
-  pub(crate) source:     Source,
+  pub(super) source:     Source,
   /// The main component of the circuit.
-  pub content:           Component, // TODO: make this pub(crate)
+  pub(super) content:    Component, // TODO: make this pub(crate)
   /// A HashMap that is used to access a Node's voltage and current once the
   /// simulation has started. This won't be used at all during the setup and
   /// shall be initialized when the simulation starts.
-  pub(crate) nodes:      HashMap<Id, Node>,
+  pub(super) nodes:      HashMap<Id, Node>,
 }
 
 impl Circuit

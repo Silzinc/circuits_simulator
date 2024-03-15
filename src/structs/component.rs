@@ -1,4 +1,4 @@
-use super::{Dipole, Id, Node};
+use super::{Circuit, Dipole, Id, Node};
 use crate::{
   error::{self, short_circuit_current, short_circuit_tension, Error::CircuitBuild},
   util::{
@@ -464,5 +464,116 @@ impl Component
   {
     self.init_state = ComponentInitState::None;
     self
+  }
+}
+
+impl Component
+{
+  /// Returns an `Option` containing a reference to a `Component` based on its
+  /// ID.
+  ///
+  /// # Arguments
+  ///
+  /// * `id` - An `Id` representing the ID of the `Component`.
+  ///
+  /// # Returns
+  ///
+  /// An `Option` containing a reference to a `Component` if it exists,
+  /// otherwise `None`.
+  pub fn get_comp_by_id(&self, id: &[u8]) -> Option<&Component>
+  {
+    use ComponentContent::*;
+    if id.is_empty() {
+      return Some(self);
+    }
+    match self.content {
+      Series(ref components) | Parallel(ref components) => {
+        let index = id[0] as usize;
+        if index < components.len() {
+          components[index].get_comp_by_id(&id[1..])
+        } else {
+          None
+        }
+      },
+      _ => None,
+    }
+  }
+
+  /// Returns an `Option` containing a mutable reference to a `Component` based
+  /// on its ID.
+  ///
+  /// # Arguments
+  ///
+  /// * `id` - An `Id` representing the ID of the `Component`.
+  ///
+  /// # Returns
+  ///
+  /// An `Option` containing a reference to a `Component` if it exists,
+  /// otherwise `None`.
+  pub fn get_comp_by_id_mut(&mut self, id: &[u8]) -> Option<&mut Component>
+  {
+    use ComponentContent::*;
+    if id.is_empty() {
+      return Some(self);
+    }
+    match self.content {
+      Series(ref mut components) | Parallel(ref mut components) => {
+        let index = id[0] as usize;
+        if index < components.len() {
+          components[index].get_comp_by_id_mut(&id[1..])
+        } else {
+          None
+        }
+      },
+      _ => None,
+    }
+  }
+}
+
+impl Circuit
+{
+  /// Gives a reference to the total impedance of the circuit.
+  #[inline]
+  pub fn impedance(&self) -> &RatioFrac<Complex<f64>> { &self.content.impedance }
+
+  /// Gives a reference to the main component of the circuit.
+  #[inline]
+  pub fn content(&self) -> &Component { &self.content }
+
+  /// Gives a mutable reference to the main component of the circuit.
+  /// This method assumes that the circuit will be modified and uninitializes
+  /// it completely.
+  #[inline]
+  pub fn content_mut(&mut self) -> &mut Component { &mut self.uninit_all().content }
+
+  /// Gives a reference to a component of the circuit based on its ID.
+  ///
+  /// # Arguments
+  ///
+  /// * `id` - The ID of the component to retrieve.
+  ///
+  /// # Returns
+  ///
+  /// An `Option` containing a reference to the component if it exists,
+  /// otherwise `None`.
+  #[inline]
+  pub fn get_comp_by_id(&self, id: &[u8]) -> Option<&Component> { self.content.get_comp_by_id(id) }
+
+  /// Gives a mutable reference to a component of the circuit based on its ID.
+  /// This method assumes that the circuit will be modified and uninitializes it
+  /// completely.
+  ///
+  /// # Arguments
+  ///
+  /// * `id` - The ID of the component to retrieve.
+  ///
+  /// # Returns
+  ///
+  /// An `Option` containing a mutable reference to the component if it exists,
+  /// otherwise `None`.
+  #[inline]
+  pub fn get_comp_by_id_mut(&mut self, id: &[u8]) -> Option<&mut Component>
+  {
+    self.uninit_all().content.get_comp_by_id_mut(id)
   }
 }
