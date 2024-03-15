@@ -204,8 +204,8 @@ impl Component {
   ///   Dipole::{Capacitor, Resistor},
   /// };
   ///
-  /// let mut component1 = Component::try_from(Resistor(10.0)).unwrap();
-  /// let mut component2 = Component::try_from(Capacitor(0.1)).unwrap();
+  /// let mut component1 = Component::from(Resistor(10.0));
+  /// let mut component2 = Component::from(Capacitor(0.1));
   ///
   /// component1.push_parallel(component2);
   /// ```
