@@ -1,9 +1,20 @@
-use crate::error::{self, Error::CircuitBuild};
 use fractios::RatioFrac;
 use num::Complex;
 use num_traits::Zero;
-use polyx::{polynomial, Polynomial};
-use serde::{ser::SerializeStruct, Serialize, Serializer};
+use polyx::{
+  polynomial,
+  Polynomial,
+};
+use serde::{
+  ser::SerializeStruct,
+  Serialize,
+  Serializer,
+};
+
+use crate::error::{
+  self,
+  Error::CircuitBuild,
+};
 
 #[derive(Clone, Debug, Default)]
 /// Represents a dipole, which is an electrical component with two terminals.
@@ -39,10 +50,14 @@ impl Dipole
         }],
         polynomial![Complex::zero(), Complex::from(1f64)],
       ))),
-      Dipole::Inductor(l) =>
-        Ok(RatioFrac::from(polynomial![Complex::zero(), Complex { re: 0f64, im: *l }])),
+      Dipole::Inductor(l) => Ok(RatioFrac::from(polynomial![
+        Complex::zero(),
+        Complex { re: 0f64, im: *l }
+      ])),
       Dipole::Equivalent(e) => Ok(e.clone()),
-      Dipole::Poisoned => Err(CircuitBuild("Called impedance on poisoned dipole".to_string())),
+      Dipole::Poisoned => Err(CircuitBuild(
+        "Called impedance on poisoned dipole".to_string(),
+      )),
     }
   }
 }

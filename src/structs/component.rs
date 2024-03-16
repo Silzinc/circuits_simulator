@@ -1,22 +1,41 @@
-use super::{Dipole, Id, Node};
-use crate::{
-  error::{self, short_circuit_current, short_circuit_tension, Error::CircuitBuild},
-  util::{
-    evaluate_zero_without_invx, evaluate_zero_without_x, is_multiple_of_invx, is_multiple_of_x,
-  },
-};
+use std::collections::HashMap;
+
 use fractios::RatioFrac;
 use num::complex::Complex;
 use num_traits::Zero;
-use serde::{ser::SerializeStruct, Serialize, Serializer};
-use std::collections::HashMap;
+use serde::{
+  ser::SerializeStruct,
+  Serialize,
+  Serializer,
+};
+
+use super::{
+  Dipole,
+  Id,
+  Node,
+};
+use crate::{
+  error::{
+    self,
+    short_circuit_current,
+    short_circuit_tension,
+    Error::CircuitBuild,
+  },
+  util::{
+    evaluate_zero_without_invx,
+    evaluate_zero_without_x,
+    is_multiple_of_invx,
+    is_multiple_of_x,
+  },
+};
 
 /// Represents the initialisation state of a component.
 #[derive(Clone, Debug, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub enum ComponentInitState {
+pub enum ComponentInitState
+{
   /// No initialisation
   #[default]
-  None = 0,
+  None      = 0,
   /// The impedances have been computed
   Impedance = 1,
   /// The initial currents, tensions, and potentials have been computed,
@@ -28,7 +47,8 @@ pub enum ComponentInitState {
 /// parallel or series combination of other components, a simple dipole, or a
 /// poisoned state used as a default.
 #[derive(Clone, Debug, Default)]
-pub enum ComponentContent {
+pub enum ComponentContent
+{
   Parallel(Vec<Component>),
   Series(Vec<Component>),
   Simple(Dipole),
@@ -37,7 +57,8 @@ pub enum ComponentContent {
   Poisoned,
 }
 
-impl Serialize for ComponentContent {
+impl Serialize for ComponentContent
+{
   #[inline]
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where
@@ -67,30 +88,35 @@ impl Serialize for ComponentContent {
 
 /// A struct representing a circuit component.
 #[derive(Clone, Debug, Default)]
-pub struct Component {
+pub struct Component
+{
   /// The content of the component.
-  pub content: ComponentContent,
+  pub content:      ComponentContent,
   /// The impedance of the component.
-  pub impedance: RatioFrac<Complex<f64>>,
+  pub impedance:    RatioFrac<Complex<f64>>,
   /// The ID of the node connected to the component's fore port.
   pub fore_node_id: Id,
-  pub init_state: ComponentInitState,
+  pub init_state:   ComponentInitState,
 }
 
-impl Component {
+impl Component
+{
   #[inline]
-  pub fn new() -> Self {
+  pub fn new() -> Self
+  {
     Component::default()
   }
 
   /// Returns the impedance of the component for a given pulse.
   #[inline]
-  pub fn impedance(&self, pulse: f64) -> Complex<f64> {
+  pub fn impedance(&self, pulse: f64) -> Complex<f64>
+  {
     self.impedance.eval(Complex::from(pulse))
   }
 }
 
-impl Serialize for Component {
+impl Serialize for Component
+{
   #[inline]
   fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
   where
@@ -98,14 +124,19 @@ impl Serialize for Component {
   {
     let mut state = serializer.serialize_struct("Component", 2)?;
     state.serialize_field("content", &self.content)?;
-    state.serialize_field("foreNodeId", &String::from_utf8(self.fore_node_id.clone()).unwrap())?;
+    state.serialize_field(
+      "foreNodeId",
+      &String::from_utf8(self.fore_node_id.clone()).unwrap(),
+    )?;
     state.end()
   }
 }
 
-impl From<ComponentContent> for Component {
+impl From<ComponentContent> for Component
+{
   #[inline]
-  fn from(content: ComponentContent) -> Self {
+  fn from(content: ComponentContent) -> Self
+  {
     Component {
       content,
       impedance: RatioFrac::default(),
@@ -115,14 +146,17 @@ impl From<ComponentContent> for Component {
   }
 }
 
-impl From<Dipole> for Component {
+impl From<Dipole> for Component
+{
   #[inline]
-  fn from(content: Dipole) -> Self {
+  fn from(content: Dipole) -> Self
+  {
     Self::from(ComponentContent::Simple(content))
   }
 }
 
-impl Component {
+impl Component
+{
   /// Pushes a component onto self in series.
   ///
   /// # Arguments
@@ -142,7 +176,10 @@ impl Component {
   /// ```
   /// use circuits_simulator::{
   ///   Component,
-  ///   Dipole::{Capacitor, Resistor},
+  ///   Dipole::{
+  ///     Capacitor,
+  ///     Resistor,
+  ///   },
   /// };
   ///
   /// let mut component1 = Component::from(Resistor(10.0));
@@ -151,7 +188,8 @@ impl Component {
   /// component1.push_serie(component2);
   /// ```
   #[inline]
-  pub fn push_serie(&mut self, component: Self) -> &mut Self {
+  pub fn push_serie(&mut self, component: Self) -> &mut Self
+  {
     use ComponentContent::*;
     match self.content {
       Poisoned => {
@@ -201,7 +239,10 @@ impl Component {
   /// ```
   /// use circuits_simulator::{
   ///   Component,
-  ///   Dipole::{Capacitor, Resistor},
+  ///   Dipole::{
+  ///     Capacitor,
+  ///     Resistor,
+  ///   },
   /// };
   ///
   /// let mut component1 = Component::from(Resistor(10.0));
@@ -210,7 +251,8 @@ impl Component {
   /// component1.push_parallel(component2);
   /// ```
   #[inline]
-  pub fn push_parallel(&mut self, component: Self) -> &mut Self {
+  pub fn push_parallel(&mut self, component: Self) -> &mut Self
+  {
     use ComponentContent::*;
     match self.content {
       Poisoned => {
@@ -245,13 +287,15 @@ impl Component {
 
   // Swaps two components in a branch
   #[inline]
-  pub fn swap(&mut self, index1: usize, index2: usize) -> error::Result<&mut Self> {
+  pub fn swap(&mut self, index1: usize, index2: usize) -> error::Result<&mut Self>
+  {
     use ComponentContent::*;
     match &mut self.content {
       Series(components) | Parallel(components) => components.swap(index1, index2),
-      _ => {
-        return Err(CircuitBuild("Cannot swap components in a non-branch component".to_string()))
-      },
+      _ =>
+        return Err(CircuitBuild(
+          "Cannot swap components in a non-branch component".to_string(),
+        )),
     }
     Ok(self)
   }
@@ -273,7 +317,10 @@ impl Component {
   /// ```
   /// use circuits_simulator::{
   ///   Component,
-  ///   Dipole::{Capacitor, Resistor},
+  ///   Dipole::{
+  ///     Capacitor,
+  ///     Resistor,
+  ///   },
   /// };
   ///
   /// let mut component1 = Component::from(Resistor(10.0));
@@ -284,7 +331,8 @@ impl Component {
   ///
   /// assert!(result.is_ok());
   /// ```
-  pub fn init_impedance(&mut self) -> error::Result<&mut Self> {
+  pub fn init_impedance(&mut self) -> error::Result<&mut Self>
+  {
     if self.init_state > ComponentInitState::Impedance {
       return Ok(self);
     }
@@ -314,9 +362,10 @@ impl Component {
         self.impedance = impedance;
       },
       Simple(dipole) => self.impedance = dipole.impedance()?,
-      Poisoned => {
-        return Err(CircuitBuild("Cannot initialize impedance of poisoned component".to_string()))
-      },
+      Poisoned =>
+        return Err(CircuitBuild(
+          "Cannot initialize impedance of poisoned component".to_string(),
+        )),
     };
     self.init_state = ComponentInitState::Impedance;
     Ok(self)
@@ -345,7 +394,8 @@ impl Component {
     fore_potential: Complex<f64>,
     pulse: f64,
     nodes: &mut HashMap<Id, Node>,
-  ) -> error::Result<&mut Self> {
+  ) -> error::Result<&mut Self>
+  {
     if self.init_state > ComponentInitState::CurrentTensionPotential {
       return Ok(self);
     }
@@ -441,13 +491,15 @@ impl Component {
   }
 
   #[inline]
-  pub fn uninit_current_tension_potential(&mut self) -> &mut Self {
+  pub fn uninit_current_tension_potential(&mut self) -> &mut Self
+  {
     self.init_state = self.init_state.min(ComponentInitState::Impedance);
     self
   }
 
   #[inline]
-  pub fn uninit_all(&mut self) -> &mut Self {
+  pub fn uninit_all(&mut self) -> &mut Self
+  {
     self.init_state = ComponentInitState::None;
     self
   }
@@ -463,7 +515,8 @@ impl Component {
   ///
   /// An `Option` containing a reference to a `Component` if it exists,
   /// otherwise `None`.
-  pub fn get_comp_by_id(&self, id: &[u8]) -> Option<&Component> {
+  pub fn get_comp_by_id(&self, id: &[u8]) -> Option<&Component>
+  {
     use ComponentContent::*;
     if id.is_empty() {
       return Some(self);
@@ -492,7 +545,8 @@ impl Component {
   ///
   /// An `Option` containing a reference to a `Component` if it exists,
   /// otherwise `None`.
-  pub fn get_comp_by_id_mut(&mut self, id: &[u8]) -> Option<&mut Component> {
+  pub fn get_comp_by_id_mut(&mut self, id: &[u8]) -> Option<&mut Component>
+  {
     use ComponentContent::*;
     if id.is_empty() {
       return Some(self);
@@ -518,18 +572,18 @@ impl Component {
   ///
   /// * `nodes` - A mutable reference to a `HashMap` containing the nodes of the
   ///   circuit.
-  pub(super) fn init_nodes(&self, nodes: &mut HashMap<Id, Node>) -> &Self {
+  pub(super) fn init_nodes(&self, nodes: &mut HashMap<Id, Node>) -> &Self
+  {
     use ComponentContent::*;
     let id = &self.fore_node_id;
     let mut node = Node::new();
     node.id = id.clone();
     nodes.insert(id.clone(), node);
     match &self.content {
-      Series(components) | Parallel(components) => {
+      Series(components) | Parallel(components) =>
         for component in components.iter() {
           component.init_nodes(nodes);
-        }
-      },
+        },
       _ => (),
     }
     self

@@ -1,50 +1,70 @@
-use super::{Component, Id, Node, Source};
+use std::{
+  collections::HashMap,
+  fmt::Debug,
+};
+
+use fractios::RatioFrac;
+use num::{
+  complex::Complex,
+  PrimInt,
+};
+use num_traits::Zero;
+
+use super::{
+  Component,
+  Id,
+  Node,
+  Source,
+};
 use crate::{
-  error::{short_circuit_current, Result},
+  error::{
+    short_circuit_current,
+    Result,
+  },
   util::is_multiple_of_x,
 };
-use fractios::RatioFrac;
-use num::{complex::Complex, PrimInt};
-use num_traits::Zero;
-use std::{collections::HashMap, fmt::Debug};
 
 /// The initialisation state of a circuit.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Default)]
-pub enum CircuitInitState {
+pub enum CircuitInitState
+{
   /// The circuit is not initialised.
   #[default]
-  None = 0,
+  None         = 0,
   /// The nodes of the circuit are initialised, though they have no current or
   /// tension set. The circuit is built and the impedances are calculated.
   CircuitNodes = 1,
   /// The source of the circuit is initialised. The circuit is ready to be
   /// emulated.
-  Source = 2,
+  Source       = 2,
 }
 
 #[derive(Clone, Debug, Default)]
 /// Represents an electronic circuit.
-pub struct Circuit {
+pub struct Circuit
+{
   /// The initialisation state of the circuit.
   pub(super) init_state: CircuitInitState,
   /// The source component of the circuit.
-  pub(super) source: Source,
+  pub(super) source:     Source,
   /// The main component of the circuit.
-  pub(super) content: Component, // TODO: make this pub(crate)
+  pub(super) content:    Component, // TODO: make this pub(crate)
   /// A HashMap that is used to access a Node's voltage and current once the
   /// simulation has started. This won't be used at all during the setup and
   /// shall be initialized when the simulation starts.
-  pub(super) nodes: HashMap<Id, Node>,
+  pub(super) nodes:      HashMap<Id, Node>,
 }
 
-impl Circuit {
+impl Circuit
+{
   #[inline]
-  pub fn new() -> Self {
+  pub fn new() -> Self
+  {
     Self {
       init_state: CircuitInitState::default(),
-      source: Source::new(),
-      content: Component::default(),
-      nodes: HashMap::new(),
+      source:     Source::new(),
+      content:    Component::default(),
+      nodes:      HashMap::new(),
     }
   }
 
@@ -65,7 +85,8 @@ impl Circuit {
   /// # Returns
   ///
   /// Returns `Ok(self)` if the circuit was successfully initialized.
-  pub fn init(&mut self) -> Result<&mut Self> {
+  pub fn init(&mut self) -> Result<&mut Self>
+  {
     if self.init_state == CircuitInitState::Source {
       return Ok(self);
     }
@@ -96,7 +117,8 @@ impl Circuit {
 
   // To be called when the circuit is changed
   #[inline]
-  pub fn uninit_all(&mut self) -> &mut Self {
+  pub fn uninit_all(&mut self) -> &mut Self
+  {
     self.init_state = CircuitInitState::None;
     self.nodes.clear();
     self.content.uninit_all();
@@ -105,7 +127,8 @@ impl Circuit {
 
   // To be called when the source is changed
   #[inline]
-  pub fn uninit_source(&mut self) -> &mut Self {
+  pub fn uninit_source(&mut self) -> &mut Self
+  {
     self.init_state = self.init_state.min(CircuitInitState::CircuitNodes);
     for node in self.nodes.values_mut() {
       node.next_component_tensions.clear();
@@ -127,7 +150,8 @@ impl Circuit {
   /// An `Option` containing a reference to the node if it exists, otherwise
   /// `None`.
   #[inline]
-  pub fn get_node(&self, id: &Id) -> Option<&Node> {
+  pub fn get_node(&self, id: &Id) -> Option<&Node>
+  {
     self.nodes.get(id)
   }
 
@@ -142,21 +166,25 @@ impl Circuit {
   /// An `Option` containing a mutable reference to the node if it exists,
   /// otherwise `None`.
   #[inline]
-  pub fn get_node_mut(&mut self, id: &Id) -> Option<&mut Node> {
+  pub fn get_node_mut(&mut self, id: &Id) -> Option<&mut Node>
+  {
     self.nodes.get_mut(id)
   }
 }
 
-impl Circuit {
+impl Circuit
+{
   /// Gives a reference to the total impedance of the circuit.
   #[inline]
-  pub fn impedance(&self) -> &RatioFrac<Complex<f64>> {
+  pub fn impedance(&self) -> &RatioFrac<Complex<f64>>
+  {
     &self.content.impedance
   }
 
   /// Gives a reference to the main component of the circuit.
   #[inline]
-  pub fn content(&self) -> &Component {
+  pub fn content(&self) -> &Component
+  {
     &self.content
   }
 
@@ -164,7 +192,8 @@ impl Circuit {
   /// This method assumes that the circuit will be modified and uninitializes
   /// it completely.
   #[inline]
-  pub fn content_mut(&mut self) -> &mut Component {
+  pub fn content_mut(&mut self) -> &mut Component
+  {
     &mut self.uninit_all().content
   }
 
@@ -179,7 +208,8 @@ impl Circuit {
   /// An `Option` containing a reference to the component if it exists,
   /// otherwise `None`.
   #[inline]
-  pub fn get_comp_by_id(&self, id: &[u8]) -> Option<&Component> {
+  pub fn get_comp_by_id(&self, id: &[u8]) -> Option<&Component>
+  {
     self.content.get_comp_by_id(id)
   }
 
@@ -196,13 +226,15 @@ impl Circuit {
   /// An `Option` containing a mutable reference to the component if it exists,
   /// otherwise `None`.
   #[inline]
-  pub fn get_comp_by_id_mut(&mut self, id: &[u8]) -> Option<&mut Component> {
+  pub fn get_comp_by_id_mut(&mut self, id: &[u8]) -> Option<&mut Component>
+  {
     self.uninit_all().content.get_comp_by_id_mut(id)
   }
 
   /// Sets up the nodes IDs of the `Circuit` and its components.
   #[inline]
-  pub fn init_nodes(&mut self) -> &mut Self {
+  pub fn init_nodes(&mut self) -> &mut Self
+  {
     if self.init_state > CircuitInitState::CircuitNodes {
       return self;
     }
@@ -213,7 +245,8 @@ impl Circuit {
 
   /// Sets the voltage at a specific index in the `voltages` vector.
   #[inline]
-  pub fn set_voltage(&mut self, index: usize, voltage: Complex<f64>) -> &mut Self {
+  pub fn set_voltage(&mut self, index: usize, voltage: Complex<f64>) -> &mut Self
+  {
     self.source.set_voltage(index, voltage);
     self.uninit_source()
   }
@@ -222,21 +255,24 @@ impl Circuit {
   /// pulse is already present, its voltage is updated. The pulse is represented
   /// by a voltage value.
   #[inline]
-  pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>) -> &mut Self {
+  pub fn add_pulse(&mut self, pulse: f64, voltage: Complex<f64>) -> &mut Self
+  {
     self.source.add_pulse(pulse, voltage);
     self.uninit_source()
   }
 
   /// Removes the pulse at the specified index from the generator.
   #[inline]
-  pub fn remove_pulse(&mut self, index: usize) -> &mut Self {
+  pub fn remove_pulse(&mut self, index: usize) -> &mut Self
+  {
     self.source.remove_pulse(index);
     self.uninit_source()
   }
 
   /// Clears the pulses of the generator.
   #[inline]
-  pub fn clear_source(&mut self) -> &mut Self {
+  pub fn clear_source(&mut self) -> &mut Self
+  {
     self.source.clear();
     self.uninit_source()
   }
@@ -259,7 +295,8 @@ impl Circuit {
 
   /// Non-consuming iterator over the pulses and their voltages
   #[inline]
-  pub fn voltages(&self) -> impl Iterator<Item = &(f64, Complex<f64>)> {
+  pub fn voltages(&self) -> impl Iterator<Item = &(f64, Complex<f64>)>
+  {
     self.source.voltages()
   }
 }

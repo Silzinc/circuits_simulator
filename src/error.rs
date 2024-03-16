@@ -1,9 +1,14 @@
-use crate::Id;
-use fractios::RatioFrac;
 use std::{
-  fmt::{Debug, Display},
+  fmt::{
+    Debug,
+    Display,
+  },
   io::Error as IOError,
 };
+
+use fractios::RatioFrac;
+
+use crate::Id;
 
 /// Represents an error that can occur during circuit building or solving.
 #[derive(Debug)]
@@ -37,7 +42,10 @@ impl std::error::Error for Error {}
 
 impl From<IOError> for Error
 {
-  fn from(e: IOError) -> Self { Error::IO(e) }
+  fn from(e: IOError) -> Self
+  {
+    Error::IO(e)
+  }
 }
 
 pub(crate) fn short_circuit_current<U: Debug, V: Debug, T>(

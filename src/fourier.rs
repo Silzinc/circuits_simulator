@@ -1,5 +1,11 @@
-use num_traits::{PrimInt, Zero};
-use rustfft::{num_complex::Complex, FftPlanner};
+use num_traits::{
+  PrimInt,
+  Zero,
+};
+use rustfft::{
+  num_complex::Complex,
+  FftPlanner,
+};
 
 /// This function takes a real valued function g of period 1/Δf, the fundamental
 /// frequency Δf and a number of frequencies n_freqs > 0. It returns the values

@@ -1,9 +1,14 @@
-use crate::{
-  error::{short_circuit_current, Result},
-  Circuit, Id,
-};
 use num::Complex;
 use num_traits::Zero;
+
+use crate::{
+  error::{
+    short_circuit_current,
+    Result,
+  },
+  Circuit,
+  Id,
+};
 
 /// Return type of the emulation functions.
 /// - The first vector contains the current values of the node.

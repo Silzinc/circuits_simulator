@@ -13,12 +13,21 @@
 //! ```
 //! // Emulate a serial RLC circuit with a square wave of period
 //! // 4 ms that starts after 2 ms as input
+//! use std::{
+//!   env,
+//!   time::Instant,
+//! };
+//!
 //! use circuits_simulator::{
-//!   Circuit, Component,
-//!   Dipole::{Capacitor, Inductor, Resistor},
+//!   Circuit,
+//!   Component,
+//!   Dipole::{
+//!     Capacitor,
+//!     Inductor,
+//!     Resistor,
+//!   },
 //! };
 //! use plotters::prelude::*;
-//! use std::{env, time::Instant};
 //!
 //! fn square_wave(x: f64) -> f64
 //! {
@@ -52,7 +61,9 @@
 //!
 //! // Simulate the circuit
 //! let start = Instant::now();
-//! let result = c.emulate_many(duration, step, &vec![vec![], vec![1u8]]).unwrap(); // May return an error message if a short circuit is detected
+//! let result = c
+//!   .emulate_many(duration, step, &vec![vec![], vec![1u8]])
+//!   .unwrap(); // May return an error message if a short circuit is detected
 //! let time_required = start.elapsed().as_secs_f64();
 //! ```
 

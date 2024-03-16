@@ -8,7 +8,8 @@ pub type Id = Vec<u8>;
 
 /// A node in a circuit.
 #[derive(Clone, Debug, Default)]
-pub struct Node {
+pub struct Node
+{
   /// The ID of the node.
   pub id: Id,
 
@@ -22,9 +23,11 @@ pub struct Node {
   pub currents: Vec<Complex<f64>>,
 }
 
-impl Node {
+impl Node
+{
   #[inline]
-  pub fn new() -> Self {
+  pub fn new() -> Self
+  {
     Node {
       id: Id::new(),
       next_component_tensions: Vec::new(),
