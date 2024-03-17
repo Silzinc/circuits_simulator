@@ -8,6 +8,7 @@ fn main() -> circuits_simulator::Result<()>
   };
 
   use circuits_simulator::{
+    id,
     Circuit,
     Component,
     Dipole::{
@@ -35,9 +36,9 @@ fn main() -> circuits_simulator::Result<()>
 
   // Create the serial RLC circuit
   let mut c = Circuit::new();
-  c.set_generator_fn(square_wave, duration, n_freqs);
-  c.content_mut()
-    .push_serie(Component::from(Resistor(200.))) // 0.2 kΩ, at position [0]
+  c.set_generator_fn(square_wave, duration, n_freqs)
+    .content_mut()
+    .push_serie(Component::from(Resistor(0.2e3))) // 0.2 kΩ, at position [0]
     .push_serie(Component::from(Capacitor(10e-9))) // 10 nF at position [1]
     .push_serie(Component::from(Inductor(100e-3))); // 100 mH at position [2]
 
@@ -45,12 +46,12 @@ fn main() -> circuits_simulator::Result<()>
   // and the pseudo-period is close to 200 µs
 
   // Alternatively, we could have used the following:
-  // `c.get_comp_by_id_mut(&[]).unwrap().push_serie(...)`
+  // `c.set_generator_fn(...).get_comp_by_id_mut(&[]).unwrap().push_serie(...)`
   // The `&[]` represents the ID [], corresponding to the root of the circuit.
 
   // Simulate the circuit
   let start = Instant::now();
-  let result = c.emulate_many(duration, step, &vec![vec![], vec![1u8]])?;
+  let result = c.emulate_many(duration, step, &[id![], id![1u8]])?;
   let time_required = start.elapsed().as_secs_f64();
   println!("Time required to emulate the circuit: {}s", time_required);
 
