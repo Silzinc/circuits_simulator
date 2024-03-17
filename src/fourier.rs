@@ -10,8 +10,8 @@ use rustfft::{
 /// This function takes a real valued function g of period 1/Δf, the fundamental
 /// frequency Δf and a number of frequencies n_freqs > 0. It returns the values
 /// of ĝ(0), ĝ(Δf), ĝ(2Δf), ..., ĝ(n_freqs * Δf) where ĝ is the Fourier
-/// transform of g and Δf is the fundamental frequency. ĝ(f) = Δf * ∫ g(t)
-/// exp(-2πi f t) dt with the integral from -1/2Δf to 1/2Δf.
+/// transform of g and Δf is the fundamental frequency.
+/// ĝ(f) = Δf * ∫ g(t) exp(-2πi f t) dt with the integral from -1/2Δf to 1/2Δf.
 ///
 /// # Arguments
 ///
@@ -51,7 +51,12 @@ where
   }
 
   let delta_f = fundamental;
-  let n = 2 * n_freqs + 1; // We take the 0 frequency and respect the Shannon-Nyquist criterion
+  let n = 2 * n_freqs + 1;
+  // We take the 0 frequency and make sure we do enough samples for an integration
+  // on the interval [-1/2Δf, 1/2Δf]. Since we want the coefficients up to the
+  // frequency n_freqs * Δf, we need to take double samples to satisfy
+  // Shannon-Nyquist, perform a FFT on the samples and only keep the first
+  // (correct) half of the spectrum.
 
   let t = (delta_f * n as f64).recip();
   let invn = (n as f64).recip();
