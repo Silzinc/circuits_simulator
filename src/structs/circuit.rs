@@ -100,9 +100,7 @@ impl Circuit
         return short_circuit_current(&vec![0u8], voltage, &self.content.impedance);
       }
       let initial_tension = *voltage;
-      self.content.impedance.inv_inplace();
-      let initial_current = initial_tension * self.content.impedance.eval(Complex::from(*pulse));
-      self.content.impedance.inv_inplace();
+      let initial_current = initial_tension * self.impedance().eval_inv(Complex::from(*pulse));
       self.content.init_current_tension_potential(
         initial_current,
         initial_tension,
