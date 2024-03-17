@@ -73,7 +73,8 @@ mod fourier;
 mod structs;
 mod util;
 
+pub use error::{
+  Error,
+  Result,
+};
 pub use structs::*;
-
-#[cfg(test)]
-mod test;
