@@ -1,4 +1,4 @@
-fn test_() -> crate::error::Result<()>
+fn main() -> circuits_simulator::Result<()>
 {
   // Emulate a serial RLC circuit with a square wave of period
   // 4 ms that starts after 2 ms as input
@@ -7,9 +7,7 @@ fn test_() -> crate::error::Result<()>
     time::Instant,
   };
 
-  use plotters::prelude::*;
-
-  use crate::{
+  use circuits_simulator::{
     Circuit,
     Component,
     Dipole::{
@@ -18,6 +16,7 @@ fn test_() -> crate::error::Result<()>
       Resistor,
     },
   };
+  use plotters::prelude::*;
 
   fn square_wave(x: f64) -> f64
   {
@@ -111,12 +110,4 @@ fn test_() -> crate::error::Result<()>
   root.present().expect("Failed to save the plot");
 
   Ok(())
-}
-
-#[test]
-fn test()
-{
-  if let Err(e) = test_() {
-    panic!("{}", e);
-  }
 }
