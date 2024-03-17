@@ -102,7 +102,7 @@ impl Circuit
     &mut self,
     duration: f64,
     step: f64,
-    node_ids: &Vec<Id>,
+    node_ids: &[Id],
   ) -> Result<Vec<EmulationData>>
   {
     self.init()?;
