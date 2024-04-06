@@ -61,6 +61,10 @@ fn main() -> circuits_simulator::Result<()>
 
   // Save the results to a file
   env::set_current_dir(env!("CARGO_MANIFEST_DIR")).expect("Failed to set current dir");
+  let out_dir = env::current_dir()?.join("out");
+  if !out_dir.exists() {
+    std::fs::create_dir(&out_dir)?;
+  }
   let out_path = env::current_dir()?.join("out").join("tensions.png");
 
   // Plot the results with the immense plotters crate's boilerplate
