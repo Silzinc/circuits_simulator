@@ -48,7 +48,7 @@ pub struct Circuit
   /// The source component of the circuit.
   pub(super) source:     Source,
   /// The main component of the circuit.
-  pub(super) content:    Component, // TODO: make this pub(crate)
+  pub(super) content:    Component,
   /// A HashMap that is used to access a Node's voltage and current once the
   /// simulation has started. This won't be used at all during the setup and
   /// shall be initialized when the simulation starts.
@@ -296,5 +296,19 @@ impl Circuit
   pub fn voltages(&self) -> impl Iterator<Item = &(f64, Complex<f64>)>
   {
     self.source.voltages()
+  }
+
+  /// Gives a reference to the generator
+  #[inline]
+  pub fn generator(&self) -> &Source
+  {
+    &self.source
+  }
+
+  /// Gives the complex voltage associated to a pulse at a specific index
+  #[inline]
+  pub fn get_generator_voltage(&self, index: usize) -> Complex<f64>
+  {
+    self.source.voltages[index].1
   }
 }
