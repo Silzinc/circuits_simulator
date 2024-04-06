@@ -1,6 +1,6 @@
 # Circuits simulator
 
-An algorithm to emulate a certain class of electronical analogical circuits written in Rust.
+An algorithm to emulate a certain class of electronical analogical circuits written in Rust. This will also serve as a backend for my electronics simulation software [`asce`](https://github.com/Silzinc/asce).
 
 ## Installation
 
