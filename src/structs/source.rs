@@ -2,6 +2,10 @@ use std::fmt::Debug;
 
 use num::Complex;
 use num_traits::PrimInt;
+use serde::{
+  Serialize,
+  Serializer,
+};
 
 use crate::fourier::fouriers;
 
@@ -126,5 +130,36 @@ impl Source
   pub fn voltages(&self) -> impl Iterator<Item = &(f64, Complex<f64>)>
   {
     self.voltages.iter()
+  }
+}
+
+#[derive(Serialize)]
+struct VoltageDisplayFormat
+{
+  index:   usize,
+  pulse:   f64,
+  voltage: f64,
+  phase:   f64,
+}
+
+impl Serialize for Source
+{
+  #[inline]
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    self
+      .voltages
+      .iter()
+      .enumerate()
+      .map(|(k, (pulse, complex_voltage))| VoltageDisplayFormat {
+        index:   k,
+        pulse:   *pulse,
+        voltage: complex_voltage.norm(),
+        phase:   complex_voltage.arg(),
+      })
+      .collect::<Vec<_>>()
+      .serialize(serializer)
   }
 }

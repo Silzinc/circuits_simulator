@@ -9,7 +9,7 @@ num-traits = "0.2.18"
 fractios = { version = "0.1.0", git = "https://github.com/Silzinc/fractios" }
 polyx = { version = "0.1.0", git = "https://github.com/Silzinc/polyx" }
 rustfft = "6.2.0"
-serde = "1.0.197"
+serde = { version = "1.0.197", features = ["derive"] }
 
 [dev-dependencies]
 plotters = "0.3.5"
